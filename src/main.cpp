@@ -41,26 +41,30 @@ void os_getDevKey(u1_t *buf)
 
 float readBat()
 {
-  //   int sensorValue = analogRead(BATTERY_SENSE_PIN);
-  // #ifdef DEBUG
-  //   Serial.println(sensorValue);
-  // #endif
-  //   // 1M, 470K divider across battery and using internal ADC ref of 1.1V
-  //   // Sense point is bypassed with 0.1 uF cap to reduce noise at that point
-  //   // ((1e6+470e3)/470e3)*1.1 = Vmax = 3.44 Volts
-  //   // 3.44/1023 = Volts per bit = 0.003363075
+  uint16_t value = 0;
+  int numReadings = 5;
 
-  //   // 2M, 470K 1.1V ref => 5,78V Max!
-  //   // 5,78/1023 = 0.00565
-  //   float batteryV = sensorValue * 0.00565;
+  for (int i = 0; i < numReadings; i++)
+  {
+    value = value + analogRead(BAT_SENSE_PIN);
 
-  // #ifdef DEBUG
-  //   Serial.print("Battery Voltage: ");
-  //   Serial.print(batteryV);
-  //   Serial.println(" V");
-  // #endif
-  //   return batteryV;
-  return 0;
+    // 1ms pause adds more stability between reads.
+    delay(1);
+  }
+
+  int sensorValue = value / numReadings;
+
+  float batteryV = sensorValue * BAT_SENSE_VBP;
+
+#ifdef DEBUG
+  Serial.print("Battery Voltage: ");
+  Serial.print(batteryV);
+  Serial.print(" V (");
+  Serial.print(sensorValue);
+  Serial.println(")");
+#endif
+
+  return batteryV;
 }
 
 void printHex2(unsigned c)
@@ -96,7 +100,7 @@ void do_send(osjob_t *j)
     // t = t + 40; => t [-40..+85] => [0..125] => t = t * 10; => t [0..125] => [0..1250]
     humi = bme.readHumidity() * 100;
     press = bme.readPressure() / 100.0F; // p [300..1100]
-    // bat = readBat() * 100;
+    bat = readBat() * 100;
 
     byte buffer[10];
     buffer[0] = temp >> 8;
@@ -429,6 +433,10 @@ void onEvent(ev_t ev)
 
 void setup()
 {
+
+  // use the 1.1 V internal reference
+  analogReference(INTERNAL);
+
   //pinMode(LED_BUILTIN, OUTPUT);
 #ifdef DEBUG
   while (!Serial)

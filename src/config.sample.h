@@ -14,6 +14,10 @@
 #define LORA_RESET 9
 #define LORA_CS SS
 
+// Battery
+#define BAT_SENSE_PIN A0            // Analoge Input Pin
+#define BAT_SENSE_VBP 0.00123456789 // Volts per Bit. See documentation.
+
 // BME I2C Adresses
 #define I2C_ADR_BME 0x76
 
