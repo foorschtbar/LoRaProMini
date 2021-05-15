@@ -14,6 +14,11 @@
 #define LORA_RESET 9
 #define LORA_CS SS
 
+// 1-Wire Bus
+#define USE_ONE_WIRE_SENSOR // Comment out line for BME I2C sensor
+#define ONEWIREBUS 6
+DeviceAddress sensor1 = {}; // Insert DS18x-Sensor address
+
 // Battery
 #define BAT_SENSE_PIN A0            // Analoge Input Pin
 #define BAT_SENSE_VBP 0.00123456789 // Volts per Bit. See documentation.

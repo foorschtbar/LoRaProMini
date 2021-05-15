@@ -6,9 +6,21 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 #include <LowPower.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include "config.h"
 
+#ifdef USE_ONE_WIRE_SENSOR
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(ONEWIREBUS);
+
+// Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors(&oneWire);
+
+#else
+// Setup Adafruit_BME280 lib
 Adafruit_BME280 bme;
+#endif
 
 static osjob_t sendjob;
 
@@ -85,7 +97,7 @@ void do_send(osjob_t *j)
   else
   {
     // Signed 16 bits integer, -32767 up to +32767
-    int16_t temp = 0;
+    int16_t temp = -127;
     // Unsigned 16 bits integer, 0 up to 65535
     uint16_t humi = 0;
     // Unsigned 16 bits integer, 0 up to 65535
@@ -93,13 +105,24 @@ void do_send(osjob_t *j)
     // Unsigned 16 bits integer, 0 up to 65535
     uint16_t bat = 0;
 
+#ifdef USE_ONE_WIRE_SENSOR
+    sensors.requestTemperatures(); // Send the command to get temperatures
+
+    float tempC = sensors.getTempC(sensor1);
+    if (tempC != DEVICE_DISCONNECTED_C)
+    {
+      temp = tempC * 100;
+    }
+#else
+
     bme.takeForcedMeasurement();
 
     // Read sensor values and multiply by 100 to effectively keep 2 decimals
     temp = bme.readTemperature() * 100;
     // t = t + 40; => t [-40..+85] => [0..125] => t = t * 10; => t [0..125] => [0..1250]
     humi = bme.readHumidity() * 100;
-    press = bme.readPressure() / 100.0F; // p [300..1100]
+    press = bme.readPressure() / 100.0F;         // p [300..1100]
+#endif
     bat = readBat() * 100;
 
     byte buffer[10];
@@ -447,6 +470,24 @@ void setup()
   Serial.println(F("\n=== Starting LoRaProMini ==="));
 #endif
 
+#ifdef USE_ONE_WIRE_SENSOR
+
+#ifdef DEBUG
+  Serial.print(millis());
+  Serial.print(" : ");
+  Serial.print(F("Search for 1-Wire devices..."));
+#endif
+
+  sensors.begin();
+
+#ifdef DEBUG
+  Serial.print(F("found "));
+  Serial.print(sensors.getDeviceCount(), DEC);
+  Serial.println(F(" devices"));
+#endif
+
+#else
+
   //BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
   if (!bme.begin(I2C_ADR_BME, &Wire))
   {
@@ -465,6 +506,7 @@ void setup()
                     Adafruit_BME280::FILTER_OFF,
                     Adafruit_BME280::STANDBY_MS_1000);
   }
+#endif
 
   // LMIC init
   os_init();
