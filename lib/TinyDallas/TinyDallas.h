@@ -48,17 +48,8 @@ public:
     // read device's scratchpad
     bool readScratchPad(const uint8_t *, uint8_t *);
 
-    // // convert from Celsius to Fahrenheit
-    // static float toFahrenheit(float);
-
-    // // convert from Fahrenheit to Celsius
-    // static float toCelsius(float);
-
     // convert from raw to Celsius
     static float rawToCelsius(int16_t);
-
-    // // convert from Celsius to raw
-    // static int16_t celsiusToRaw(float);
 
     // convert from raw to Fahrenheit
     static float rawToFahrenheit(int16_t);
@@ -72,9 +63,6 @@ private:
 
     // Returns true if all bytes of scratchPad are '\0'
     bool isAllZeros(const uint8_t *const scratchPad, const size_t length = 9);
-
-    // reads scratchpad and returns the raw temperature
-    //int16_t calculateTemperature(const uint8_t *, uint8_t *);
 
     typedef uint8_t ScratchPad[9];
 };
