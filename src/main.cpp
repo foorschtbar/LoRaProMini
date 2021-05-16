@@ -3,24 +3,15 @@
 #include <hal/hal.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
 #include <LowPower.h>
 #include <OneWire.h>
 #include <TinyDallas.h>
+#include <TinyBME.h>
 #include "config.h"
 
-#ifdef USE_ONE_WIRE_SENSOR
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONEWIREBUS);
-
-// Pass our oneWire reference to TinyDallas.
-TinyDallas sensors(&oneWire);
-
-#else
-// Setup Adafruit_BME280 lib
-Adafruit_BME280 bme;
-#endif
+TinyDallas ds(&oneWire);
+TinyBME bme;
 
 static osjob_t sendjob;
 
@@ -68,7 +59,7 @@ float readBat()
 
   float batteryV = sensorValue * BAT_SENSE_VBP;
 
-#ifdef DEBUG
+#ifdef VERBOSE
   Serial.print("Battery Voltage: ");
   Serial.print(batteryV);
   Serial.print(" V (");
@@ -79,12 +70,21 @@ float readBat()
   return batteryV;
 }
 
-void printHex2(unsigned c)
+void printHex(byte buffer[], size_t arraySize)
 {
-  c &= 0xff;
-  if (c < 16)
-    Serial.write(48); // 0
-  Serial.print(c, HEX);
+  unsigned c;
+  for (size_t i = 0; i < arraySize; i++)
+  {
+    c = buffer[i];
+
+    if (i != 0)
+      Serial.write(32); // Space
+
+    c &= 0xff;
+    if (c < 16)
+      Serial.write(48); // 0
+    Serial.print(c, HEX);
+  }
 }
 
 void do_send(osjob_t *j)
@@ -92,75 +92,76 @@ void do_send(osjob_t *j)
   // Check if there is not a current TX/RX job running
   if (LMIC.opmode & OP_TXRXPEND)
   {
+#ifdef VERBOSE
     Serial.println(F("OP_TXRXPEND, not sending"));
+#endif
   }
   else
   {
     // Signed 16 bits integer, -32767 up to +32767
-    int16_t temp = -127;
+    int16_t temp1 = -127;
     // Unsigned 16 bits integer, 0 up to 65535
-    uint16_t humi = 0;
+    uint16_t humi1 = 0;
     // Unsigned 16 bits integer, 0 up to 65535
-    uint16_t press = 0;
+    uint16_t press1 = 0;
+    // Signed 16 bits integer, -32767 up to +32767
+    int16_t temp2 = -127;
     // Unsigned 16 bits integer, 0 up to 65535
-    uint16_t bat = 0;
+    uint16_t bat = readBat() * 100;
 
-#ifdef USE_ONE_WIRE_SENSOR
-    sensors.requestTemperatures(); // Send the command to get temperatures
-
-    float tempC = sensors.getTempC(sensor1);
-    if (tempC != DEVICE_DISCONNECTED_C)
-    {
-      temp = tempC * 100;
-    }
-#else
-
+    // BME280
     bme.takeForcedMeasurement();
 
     // Read sensor values and multiply by 100 to effectively keep 2 decimals
-    temp = bme.readTemperature() * 100;
+    temp1 = bme.readTemperature() * 100;
     // t = t + 40; => t [-40..+85] => [0..125] => t = t * 10; => t [0..125] => [0..1250]
-    humi = bme.readHumidity() * 100;
-    press = bme.readPressure() / 100.0F;         // p [300..1100]
-#endif
-    bat = readBat() * 100;
+    humi1 = bme.readHumidity() * 100;
+    press1 = bme.readPressure() / 100.0F; // p [300..1100]
+
+    // 1-Wire sensors
+    ds.requestTemperatures(); // Send the command to get temperatures
+
+    float tempC = ds.getTempC(sensor1);
+    if (tempC != DEVICE_DISCONNECTED_C)
+    {
+      temp2 = tempC * 100;
+    }
 
     byte buffer[10];
-    buffer[0] = temp >> 8;
-    buffer[1] = temp;
-    buffer[2] = humi >> 8;
-    buffer[3] = humi;
-    buffer[4] = press >> 8;
-    buffer[5] = press;
-    buffer[6] = bat >> 8;
-    buffer[7] = bat;
+    buffer[0] = temp1 >> 8;
+    buffer[1] = temp1;
+    buffer[2] = humi1 >> 8;
+    buffer[3] = humi1;
+    buffer[4] = press1 >> 8;
+    buffer[5] = press1;
+    buffer[6] = temp2 >> 8;
+    buffer[7] = temp2;
+    buffer[8] = bat >> 8;
+    buffer[9] = bat;
     LMIC_setTxData2(1, buffer, sizeof(buffer), 0);
 
 #ifdef DEBUG
-    Serial.print(F("> Temperature: "));
-    Serial.println(temp);
-    Serial.print(F("> Humidity: "));
-    Serial.println(humi);
-    Serial.print(F("> Pressure: "));
-    Serial.println(press);
-    Serial.print(F("> Battery: "));
+    Serial.println(F("Packet:"));
+    Serial.print(F("> BME Temp:"));
+    Serial.println(temp1);
+    Serial.print(F("> BME Humi:"));
+    Serial.println(humi1);
+    Serial.print(F("> BME Pres:"));
+    Serial.println(press1);
+    Serial.print(F("> DS18x Temp:"));
+    Serial.println(temp2);
+    Serial.print(F("> Batt: "));
     Serial.println(bat);
-    Serial.print(F("> LoRa packet payload: "));
-    for (size_t i = 0; i < sizeof(buffer); i++)
-    {
-      if (i != 0)
-        Serial.write(32); // Space
-      printHex2(buffer[i]);
-    }
+    Serial.print(F("> = "));
+    printHex(buffer, sizeof(buffer));
     Serial.println();
 #endif
 
     // Prepare upstream data transmission at the next possible time.
     LMIC_setTxData2(1, buffer, sizeof(buffer), 0);
-
-    Serial.print(millis());
-    Serial.print(" : ");
-    Serial.println(F("Packet queued"));
+#ifdef DEBUG
+    Serial.println(F("LoRa packet queued"));
+#endif
   }
 }
 
@@ -269,11 +270,9 @@ void do_sleep(uint16_t sleepTime)
   uint16_t sleepTimeLeft = sleepTime;
 
 #ifdef DEBUG
-  Serial.print(millis());
-  Serial.print(" : ");
   Serial.print(F("Sleep for "));
   Serial.print(sleepTime);
-  Serial.println(F(" seconds"));
+  Serial.println(F("s\n"));
   Serial.flush();
 #endif
 
@@ -307,19 +306,17 @@ void do_sleep(uint16_t sleepTime)
 
 void onEvent(ev_t ev)
 {
-  Serial.print(millis());
-  Serial.print(" : ");
   switch (ev)
   {
     break;
   case EV_JOINING:
 #ifdef DEBUG
-    Serial.println(F("EV_JOINING"));
+    Serial.println(F("LoRa joining"));
 #endif
     break;
   case EV_JOINED:
 #ifdef DEBUG
-    Serial.println(F("EV_JOINED"));
+    Serial.println(F("LoRa joined"));
 #endif
 #ifndef ABP
     {
@@ -333,20 +330,10 @@ void onEvent(ev_t ev)
       Serial.print(F("> DevAddr: "));
       Serial.println(devaddr, HEX);
       Serial.print(F("> AppSKey: "));
-      for (size_t i = 0; i < sizeof(artKey); ++i)
-      {
-        if (i != 0)
-          Serial.write(32); // Space
-        printHex2(artKey[i]);
-      }
-      Serial.println("");
+      printHex(artKey, sizeof(artKey));
+      Serial.println();
       Serial.print(F("> NwkSKey: "));
-      for (size_t i = 0; i < sizeof(nwkKey); ++i)
-      {
-        if (i != 0)
-          Serial.write(32); // Space
-        printHex2(nwkKey[i]);
-      }
+      printHex(nwkKey, sizeof(nwkKey));
       Serial.println();
     }
 
@@ -360,19 +347,19 @@ void onEvent(ev_t ev)
     break;
   case EV_JOIN_FAILED:
 #ifdef DEBUG
-    Serial.println(F("EV_JOIN_FAILED"));
+    Serial.println(F("LoRa join failed"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_REJOIN_FAILED:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("EV_REJOIN_FAILED"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_TXCOMPLETE:
 #ifdef DEBUG
-    Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+    Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
     if (LMIC.txrxFlags & TXRX_ACK)
       Serial.println(F("> Received ack"));
     if (LMIC.dataLen)
@@ -401,39 +388,39 @@ void onEvent(ev_t ev)
     os_setCallback(&sendjob, do_send);
     break;
   case EV_LOST_TSYNC:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("EV_LOST_TSYNC"));
 #endif
     break;
   case EV_RESET:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("EV_RESET"));
 #endif
 
     break;
   case EV_RXCOMPLETE:
-#ifdef DEBUG
+#ifdef VERBOSE
     // data received in ping slot
     Serial.println(F("EV_RXCOMPLETE"));
 #endif
     break;
   case EV_LINK_DEAD:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("EV_LINK_DEAD"));
 #endif
     break;
   case EV_LINK_ALIVE:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("EV_LINK_ALIVE"));
 #endif
     break;
   case EV_TXSTART:
 #ifdef DEBUG
-    Serial.println(F("EV_TXSTART"));
+    Serial.println(F("LoRa TX start"));
 #endif
     break;
   case EV_TXCANCELED:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("EV_TXCANCELED"));
 #endif
     break;
@@ -442,11 +429,11 @@ void onEvent(ev_t ev)
     break;
   case EV_JOIN_TXCOMPLETE:
 #ifdef DEBUG
-    Serial.println(F("EV_JOIN_TXCOMPLETE: no JoinAccept"));
+    Serial.println(F("LoRa NO JoinAccept"));
 #endif
     break;
   default:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.print(F("Unknown event: "));
     Serial.println((unsigned)ev);
 #endif
@@ -470,83 +457,60 @@ void setup()
   Serial.println(F("\n=== Starting LoRaProMini ==="));
 #endif
 
-#ifdef USE_ONE_WIRE_SENSOR
-
 #ifdef DEBUG
-  Serial.print(millis());
-  Serial.print(" : ");
-  Serial.print(F("Search for 1-Wire devices..."));
+  Serial.print("Search for DS18x devices...");
 #endif
 
-  sensors.begin();
+  ds.begin();
 
 #ifdef DEBUG
-  Serial.print(F("found "));
-  Serial.print(sensors.getDeviceCount(), DEC);
-  Serial.println(F(" devices"));
+  Serial.print("found ");
+  Serial.print(ds.getDeviceCount(), DEC);
+  Serial.println(" device(s)");
 
-  sensors.requestTemperatures();
+#ifdef VERBOSE
+  ds.requestTemperatures();
 
-  for (int i = 0; i < sensors.getDeviceCount(); i++)
+  for (int i = 0; i < ds.getDeviceCount(); i++)
   {
 
     Serial.print(F("> #"));
     Serial.print(i);
     Serial.print(F(": "));
     DeviceAddress deviceAddress;
-    if (sensors.getAddress(deviceAddress, i))
+    if (ds.getAddress(deviceAddress, i))
     {
-      for (size_t i = 0; i < sizeof(deviceAddress); i++)
-      {
-        if (i != 0)
-          Serial.write(32); // Space
-        printHex2(deviceAddress[i]);
-      }
+      printHex(deviceAddress, sizeof(deviceAddress));
 
       Serial.print(" --> ");
       uint8_t scratchPad[9];
-      sensors.readScratchPad(deviceAddress, scratchPad);
+      ds.readScratchPad(deviceAddress, scratchPad);
 
-      for (size_t i = 0; i < sizeof(scratchPad); i++)
-      {
-        if (i != 0)
-          Serial.write(32); // Space
-        printHex2(scratchPad[i]);
-      }
+      printHex(scratchPad, sizeof(scratchPad));
 
       Serial.print(" --> ");
-      Serial.print(sensors.getTempC(deviceAddress));
+      Serial.print(ds.getTempC(deviceAddress));
       Serial.print(" °C");
-    }
-    else
-    {
-      Serial.print(F("no address!"));
     }
     Serial.println();
   }
 #endif
-
-#else
+#endif
 
   //BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
-  if (!bme.begin(I2C_ADR_BME, &Wire))
+#ifdef DEBUG
+  Serial.print(F("Search for BME280..."));
+#endif
+  if (!bme.begin(I2C_ADR_BME))
   {
 #ifdef DEBUG
-    Serial.print(millis());
-    Serial.print(": ");
-    Serial.println(F("Could not find BME280"));
+    Serial.println(F("not found"));
 #endif
   }
   else
   {
-    bme.setSampling(Adafruit_BME280::MODE_FORCED,
-                    Adafruit_BME280::SAMPLING_X1, // temperature
-                    Adafruit_BME280::SAMPLING_X1, // pressure
-                    Adafruit_BME280::SAMPLING_X1, // humidity
-                    Adafruit_BME280::FILTER_OFF,
-                    Adafruit_BME280::STANDBY_MS_1000);
+    Serial.println(F("found device"));
   }
-#endif
 
   // LMIC init
   os_init();
@@ -554,9 +518,7 @@ void setup()
   // Reset the MAC state. Session and pending data transfers will be discarded.
   lmicStartup();
 
-#ifdef DEBUG
-  Serial.print(millis());
-  Serial.print(": ");
+#ifdef VERBOSE
   Serial.println(F("Setup complete. Begin with LoRa"));
 #endif
 

@@ -16,7 +16,6 @@
 #define LORA_CS SS
 
 // 1-Wire Bus
-#define USE_ONE_WIRE_SENSOR // Comment out line for BME I2C sensor
 #define ONEWIREBUS 6
 DeviceAddress sensor1 = {}; // Insert DS18x-Sensor address
 
