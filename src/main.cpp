@@ -7,15 +7,15 @@
 #include <Adafruit_BME280.h>
 #include <LowPower.h>
 #include <OneWire.h>
-#include <DallasTemperature.h>
+#include <TinyDallas.h>
 #include "config.h"
 
 #ifdef USE_ONE_WIRE_SENSOR
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONEWIREBUS);
 
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
+// Pass our oneWire reference to TinyDallas.
+TinyDallas sensors(&oneWire);
 
 #else
 // Setup Adafruit_BME280 lib
@@ -484,6 +484,46 @@ void setup()
   Serial.print(F("found "));
   Serial.print(sensors.getDeviceCount(), DEC);
   Serial.println(F(" devices"));
+
+  sensors.requestTemperatures();
+
+  for (int i = 0; i < sensors.getDeviceCount(); i++)
+  {
+
+    Serial.print(F("> #"));
+    Serial.print(i);
+    Serial.print(F(": "));
+    DeviceAddress deviceAddress;
+    if (sensors.getAddress(deviceAddress, i))
+    {
+      for (size_t i = 0; i < sizeof(deviceAddress); i++)
+      {
+        if (i != 0)
+          Serial.write(32); // Space
+        printHex2(deviceAddress[i]);
+      }
+
+      Serial.print(" --> ");
+      uint8_t scratchPad[9];
+      sensors.readScratchPad(deviceAddress, scratchPad);
+
+      for (size_t i = 0; i < sizeof(scratchPad); i++)
+      {
+        if (i != 0)
+          Serial.write(32); // Space
+        printHex2(scratchPad[i]);
+      }
+
+      Serial.print(" --> ");
+      Serial.print(sensors.getTempC(deviceAddress));
+      Serial.print(" °C");
+    }
+    else
+    {
+      Serial.print(F("no address!"));
+    }
+    Serial.println();
+  }
 #endif
 
 #else

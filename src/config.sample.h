@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <lmic.h>
+#include <TinyDallas.h>
 
 // Enable debug prints to serial monitor
 #define DEBUG
