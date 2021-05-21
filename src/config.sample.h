@@ -15,14 +15,15 @@
 #define ONEWIREBUS 6
 
 // Battery
-#define BAT_SENSE_PIN A0            // Analoge Input Pin
-#define BAT_SENSE_VBP 0.00123456789 // Volts per Bit. See documentation.
+#define BAT_SENSE_PIN A0           // Analoge Input Pin
+#define BAT_SENSE_VBP 0.0012345678 // Volts per Bit. See documentation
+#define BAT_MIN_VOLTAGE 3.8        // Sleep if voltage is lower than that value
 
 // BME I2C Adresses
 #define I2C_ADR_BME 0x76
 
 // (Deep) Sleep time between data acquisition and transmission
-#define SLEEPTIME 60
+#define SLEEPTIME 300
 
 // Activation Method: ABP mode. Comment out line or change to OTAA for OTAA mode
 #define ABP

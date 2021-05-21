@@ -287,9 +287,6 @@ void do_sleep(uint16_t sleepTime)
   Serial.flush();
 #endif
 
-  // Power down LoRa Module
-  LMIC.opmode = OP_SHUTDOWN;
-
   // sleep logic using LowPower library
   uint16_t delays[] = {8, 4, 2, 1};
   period_t sleep[] = {SLEEP_8S, SLEEP_4S, SLEEP_2S, SLEEP_1S};
@@ -311,8 +308,6 @@ void do_sleep(uint16_t sleepTime)
   }
 
   fixMillis(sleepTime * 1000);
-
-  LMIC.opmode = OP_NONE;
 }
 
 void onEvent(ev_t ev)
@@ -392,8 +387,28 @@ void onEvent(ev_t ev)
     }
 #endif
 
+    // Power down LoRa Module
+    LMIC.opmode = OP_SHUTDOWN;
+
     // Going to sleep
-    do_sleep(SLEEPTIME);
+    boolean sleep = true;
+    while (sleep)
+    {
+      do_sleep(SLEEPTIME);
+      if (readBat() >= BAT_MIN_VOLTAGE)
+      {
+        sleep = false;
+      }
+      else
+      {
+#ifdef DEBUG
+        Serial.println(F("Battery voltage to low!"));
+#endif
+      }
+    }
+
+    // Power up LoRa Module
+    LMIC.opmode = OP_NONE;
 
     // Schedule next transmission
     os_setCallback(&sendjob, do_send);
