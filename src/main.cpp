@@ -62,11 +62,19 @@ float readBat()
 
   float batteryV = sensorValue * BAT_SENSE_VBP;
 
-#ifdef VERBOSE
-  Serial.print("Battery Voltage: ");
-  Serial.print(batteryV);
-  Serial.print(" V (");
+#if defined(VERBOSE) || defined(VOLTAGECALIB)
+  Serial.print("Analoge voltage: ");
+  Serial.print(((1.1 / 1024.0) * sensorValue), 2);
+  Serial.print(" V | Analoge value: ");
   Serial.print(sensorValue);
+  Serial.print(" (");
+  Serial.print(((100.0 / 1023.0) * sensorValue), 1);
+  Serial.print("% of Range) | Battery voltage: ");
+  Serial.print(batteryV, 1);
+  Serial.print(" V (");
+  Serial.print(batteryV, 2);
+  Serial.print(" V, VBP=");
+  Serial.print(BAT_SENSE_VBP, 10);
   Serial.println(")");
 #endif
 
@@ -314,7 +322,7 @@ void onEvent(ev_t ev)
     break;
   case EV_JOINING:
 #ifdef DEBUG
-    Serial.println(F("LoRa joining"));
+    Serial.println(F("LoRa joining..."));
 #endif
     break;
   case EV_JOINED:
@@ -419,7 +427,7 @@ void onEvent(ev_t ev)
     break;
   case EV_TXSTART:
 #ifdef DEBUG
-    Serial.println(F("LoRa TX start"));
+    Serial.println(F("LoRa TX start..."));
 #endif
     break;
   case EV_TXCANCELED:
@@ -458,6 +466,11 @@ void setup()
   delay(100); // per sample code on RF_95 test
 
   Serial.println(F("\n=== Starting LoRaProMini ==="));
+#endif
+
+#ifdef VOLTAGECALIB
+  Serial.println(F("VOLTAGE CALIBRATION MODE ENABLED"));
+  Serial.println(F("LORA DISABLED"));
 #endif
 
 #ifdef DEBUG
@@ -502,6 +515,7 @@ void setup()
       ds.readScratchPad(deviceAddress, scratchPad);
       printHex(scratchPad, sizeof(scratchPad));
 #endif
+
 #ifdef DEBUG
       Serial.print(" --> ");
       Serial.print(ds.getTempC(deviceAddress));
@@ -527,15 +541,19 @@ void setup()
 #endif
   }
 
+#ifndef VOLTAGECALIB
   // LMIC init
   os_init();
 
   // Reset the MAC state. Session and pending data transfers will be discarded.
   lmicStartup();
+#endif
 
 #ifdef VERBOSE
   Serial.println(F("Setup complete. Begin with LoRa"));
 #endif
+
+#ifndef VOLTAGECALIB
 
 #ifdef ABP
   // Start job in ABP Mode
@@ -545,9 +563,16 @@ void setup()
   // Join the network, sending will be started after the event "Joined"
   LMIC_startJoining();
 #endif
+
+#endif
 }
 
 void loop()
 {
+#ifdef VOLTAGECALIB
+  readBat();
+  delay(1000);
+#else
   os_runloop_once();
+#endif
 }
