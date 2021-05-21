@@ -3,10 +3,6 @@
 
 #include <Arduino.h>
 #include <lmic.h>
-#include <TinyDallas.h>
-
-// Enable debug prints to serial monitor
-#define DEBUG
 
 // LoRa module pins
 #define LORA_DIO0 2
@@ -17,7 +13,6 @@
 
 // 1-Wire Bus
 #define ONEWIREBUS 6
-DeviceAddress sensor1 = {}; // Insert DS18x-Sensor address
 
 // Battery
 #define BAT_SENSE_PIN A0            // Analoge Input Pin

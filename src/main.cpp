@@ -13,8 +13,11 @@ OneWire oneWire(ONEWIREBUS);
 TinyDallas ds(&oneWire);
 TinyBME bme;
 
-static osjob_t sendjob;
+// Dallas temp sensor(s)
+DeviceAddress dsSensor; // Holds later first sensor found at boot.
 
+// LoRa LMIC
+static osjob_t sendjob;
 const lmic_pinmap lmic_pins = {
     .nss = LORA_CS,
     .rxtx = LMIC_UNUSED_PIN,
@@ -121,7 +124,7 @@ void do_send(osjob_t *j)
     // 1-Wire sensors
     ds.requestTemperatures(); // Send the command to get temperatures
 
-    float tempC = ds.getTempC(sensor1);
+    float tempC = ds.getTempC(dsSensor);
     if (tempC != DEVICE_DISCONNECTED_C)
     {
       temp2 = tempC * 100;
@@ -152,7 +155,7 @@ void do_send(osjob_t *j)
     Serial.println(temp2);
     Serial.print(F("> Batt: "));
     Serial.println(bat);
-    Serial.print(F("> = "));
+    Serial.print(F("> Payload: "));
     printHex(buffer, sizeof(buffer));
     Serial.println();
 #endif
@@ -358,7 +361,7 @@ void onEvent(ev_t ev)
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_TXCOMPLETE:
-#ifdef DEBUG
+#ifdef VERBOSE
     Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
     if (LMIC.txrxFlags & TXRX_ACK)
       Serial.println(F("> Received ack"));
@@ -462,44 +465,54 @@ void setup()
 #endif
 
   ds.begin();
+  ds.requestTemperatures();
 
 #ifdef DEBUG
   Serial.print("found ");
   Serial.print(ds.getDeviceCount(), DEC);
   Serial.println(" device(s)");
-
-#ifdef VERBOSE
-  ds.requestTemperatures();
+#endif
 
   for (int i = 0; i < ds.getDeviceCount(); i++)
   {
-
+#ifdef DEBUG
     Serial.print(F("> #"));
     Serial.print(i);
     Serial.print(F(": "));
+#endif
     DeviceAddress deviceAddress;
     if (ds.getAddress(deviceAddress, i))
     {
+
+      // Save first sensor as measurement sensor for later
+      if (i == 0)
+      {
+        memcpy(dsSensor, deviceAddress, sizeof(deviceAddress) / sizeof(*deviceAddress));
+      }
+
+#ifdef DEBUG
+      printHex(deviceAddress, sizeof(deviceAddress));
+#endif
+
+#ifdef VERBOSE
       printHex(deviceAddress, sizeof(deviceAddress));
 
       Serial.print(" --> ");
       uint8_t scratchPad[9];
       ds.readScratchPad(deviceAddress, scratchPad);
-
       printHex(scratchPad, sizeof(scratchPad));
-
+#endif
+#ifdef DEBUG
       Serial.print(" --> ");
       Serial.print(ds.getTempC(deviceAddress));
-      Serial.print(" °C");
+      Serial.println(" °C");
+#endif
     }
-    Serial.println();
   }
-#endif
-#endif
 
   //BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
 #ifdef DEBUG
-  Serial.print(F("Search for BME280..."));
+  Serial.print(F("Search BME280..."));
 #endif
   if (!bme.begin(I2C_ADR_BME))
   {
@@ -509,7 +522,9 @@ void setup()
   }
   else
   {
+#ifdef DEBUG
     Serial.println(F("found device"));
+#endif
   }
 
   // LMIC init
