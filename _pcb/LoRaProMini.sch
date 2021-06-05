@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "LoRaProMini"
-Date "2021-05-21"
-Rev "V1.0"
+Date "2021-06-05"
+Rev "2.0"
 Comp "(c) 2021 Fabian Otto"
 Comment1 "https://github.com/foorschtbar/LoRaProMini"
 Comment2 ""
@@ -470,7 +470,7 @@ L Device:R R4
 U 1 1 6097595C
 P 5650 5700
 F 0 "R4" H 5550 5650 50  0000 R CNN
-F 1 "4,7k" H 5550 5750 50  0000 R CNN
+F 1 "4,7K" H 5550 5750 50  0000 R CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 5580 5700 50  0001 C CNN
 F 3 "~" H 5650 5700 50  0001 C CNN
 	1    5650 5700
@@ -481,7 +481,7 @@ L Device:R R3
 U 1 1 6097622B
 P 5500 5700
 F 0 "R3" H 5300 5750 50  0000 L CNN
-F 1 "4,7k" H 5250 5650 50  0000 L CNN
+F 1 "4,7K" H 5250 5650 50  0000 L CNN
 F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 5430 5700 50  0001 C CNN
 F 3 "~" H 5500 5700 50  0001 C CNN
 	1    5500 5700
@@ -490,12 +490,12 @@ $EndComp
 $Comp
 L Device:R R5
 U 1 1 609777C3
-P 8650 5800
-F 0 "R5" H 8580 5754 50  0000 R CNN
-F 1 "4,7k" H 8580 5845 50  0000 R CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 8580 5800 50  0001 C CNN
-F 3 "~" H 8650 5800 50  0001 C CNN
-	1    8650 5800
+P 8900 5800
+F 0 "R5" H 8830 5754 50  0000 R CNN
+F 1 "4,7K" H 8830 5845 50  0000 R CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 8830 5800 50  0001 C CNN
+F 3 "~" H 8900 5800 50  0001 C CNN
+	1    8900 5800
 	-1   0    0    1   
 $EndComp
 $Comp
@@ -563,35 +563,18 @@ F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 8750 5150 50  00
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	9200 4900 9200 5600
-Wire Wire Line
-	9200 5600 9400 5600
-Wire Wire Line
-	8600 4900 8600 5400
-Wire Wire Line
-	8600 5400 9400 5400
-Wire Wire Line
 	9400 5500 8900 5500
 Wire Wire Line
 	8900 5500 8900 5200
-Wire Wire Line
-	8450 5600 9200 5600
-Connection ~ 9200 5600
-Wire Wire Line
-	8450 5400 8600 5400
-Connection ~ 8600 5400
 Text GLabel 4950 3150 0    50   Input ~ 0
 1-WIRE
 Text GLabel 8400 5500 0    50   Input ~ 0
 1-WIRE
 Wire Wire Line
-	8400 5500 8650 5500
+	8400 5500 8900 5500
 Connection ~ 8900 5500
 Wire Wire Line
-	8650 5500 8650 5650
-Connection ~ 8650 5500
-Wire Wire Line
-	8650 5500 8900 5500
+	8900 5500 8900 5650
 $Comp
 L power:+3.3V #PWR0118
 U 1 1 609C31D2
@@ -604,7 +587,7 @@ F 3 "" H 8450 5950 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	8450 5950 8650 5950
+	8450 5950 8900 5950
 $Comp
 L Device:C C5
 U 1 1 60958064
@@ -662,4 +645,18 @@ Wire Wire Line
 Connection ~ 8950 2150
 Wire Wire Line
 	8950 2150 8950 2350
+Wire Wire Line
+	8450 5400 9200 5400
+Wire Wire Line
+	8450 5600 8600 5600
+Wire Wire Line
+	8600 4900 8600 5600
+Connection ~ 8600 5600
+Wire Wire Line
+	8600 5600 9400 5600
+Wire Wire Line
+	9200 4900 9200 5400
+Connection ~ 9200 5400
+Wire Wire Line
+	9200 5400 9400 5400
 $EndSCHEMATC
