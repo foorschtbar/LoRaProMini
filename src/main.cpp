@@ -153,15 +153,15 @@ void do_send(osjob_t *j)
 
 #ifdef DEBUG
     Serial.println(F("Packet:"));
-    Serial.print(F("> BME Temp:"));
+    Serial.print(F("> BME Temp:   "));
     Serial.println(temp1);
-    Serial.print(F("> BME Humi:"));
+    Serial.print(F("> BME Humi:   "));
     Serial.println(humi1);
-    Serial.print(F("> BME Pres:"));
+    Serial.print(F("> BME Pres:   "));
     Serial.println(press1);
-    Serial.print(F("> DS18x Temp:"));
+    Serial.print(F("> DS18x Temp: "));
     Serial.println(temp2);
-    Serial.print(F("> Batt: "));
+    Serial.print(F("> Batt:       "));
     Serial.println(bat);
     Serial.print(F("> Payload: "));
     printHex(buffer, sizeof(buffer));
