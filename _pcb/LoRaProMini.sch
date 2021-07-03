@@ -5,25 +5,14 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "LoRaProMini"
-Date "2021-06-05"
-Rev "2.0"
-Comp "(c) 2021 Fabian Otto"
+Date "2021-07-03"
+Rev "2.1"
+Comp "(c) 2021 foorschtbar"
 Comment1 "https://github.com/foorschtbar/LoRaProMini"
 Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-$Comp
-L foorschtbar:Arduino_Pro_Mini X1
-U 1 1 605FF6FF
-P 5500 2900
-F 0 "X1" H 5600 4199 60  0000 C CNN
-F 1 "Arduino_Pro_Mini" H 5600 4093 60  0000 C CNN
-F 2 "foorschtbar:Arduino_Pro_Mini" H 5600 3987 60  0000 C CNN
-F 3 "https://www.arduino.cc/en/Main/ArduinoBoardProMini" H 5600 3881 60  0000 C CNN
-	1    5500 2900
-	1    0    0    -1  
-$EndComp
 $Comp
 L RF_Module:RFM95W-868S2 U2
 U 1 1 60600322
@@ -174,8 +163,8 @@ $Comp
 L Connector_Generic:Conn_01x02 J1
 U 1 1 60609DBC
 P 2450 5350
-F 0 "J1" H 2368 5025 50  0000 C CNN
-F 1 "Conn_01x02" H 2368 5116 50  0000 C CNN
+F 0 "J1" H 2550 5350 50  0000 L CNN
+F 1 "Conn_01x02" H 2550 5250 50  0000 L CNN
 F 2 "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical" H 2450 5350 50  0001 C CNN
 F 3 "~" H 2450 5350 50  0001 C CNN
 	1    2450 5350
@@ -195,12 +184,12 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x04 J3
 U 1 1 6060C0CD
-P 5950 5250
-F 0 "J3" H 6030 5242 50  0000 L CNN
-F 1 "Conn_01x04" H 6030 5151 50  0000 L CNN
-F 2 "Connector_JST:JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical" H 5950 5250 50  0001 C CNN
-F 3 "~" H 5950 5250 50  0001 C CNN
-	1    5950 5250
+P 2550 6600
+F 0 "J3" H 2630 6592 50  0000 L CNN
+F 1 "Conn_01x04" H 2630 6501 50  0000 L CNN
+F 2 "Connector_JST:JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical" H 2550 6600 50  0001 C CNN
+F 3 "~" H 2550 6600 50  0001 C CNN
+	1    2550 6600
 	1    0    0    -1  
 $EndComp
 Text Notes 2200 1550 0    50   ~ 0
@@ -209,28 +198,28 @@ Text Notes 9100 1600 0    50   ~ 0
 LoRa
 Text Notes 8850 4400 0    50   ~ 0
 Aux 1-Wire
-Text Notes 5400 5000 0    50   ~ 0
+Text Notes 2000 6350 0    50   ~ 0
 Aux I2C
 $Comp
 L power:GND #PWR0101
 U 1 1 6060D611
-P 5250 5250
-F 0 "#PWR0101" H 5250 5000 50  0001 C CNN
-F 1 "GND" V 5250 5050 50  0000 C CNN
-F 2 "" H 5250 5250 50  0001 C CNN
-F 3 "" H 5250 5250 50  0001 C CNN
-	1    5250 5250
+P 1850 6600
+F 0 "#PWR0101" H 1850 6350 50  0001 C CNN
+F 1 "GND" V 1850 6400 50  0000 C CNN
+F 2 "" H 1850 6600 50  0001 C CNN
+F 3 "" H 1850 6600 50  0001 C CNN
+	1    1850 6600
 	0    1    1    0   
 $EndComp
 $Comp
 L power:+3.3V #PWR0102
 U 1 1 6060E38D
-P 5250 5150
-F 0 "#PWR0102" H 5250 5000 50  0001 C CNN
-F 1 "+3.3V" V 5265 5278 50  0000 L CNN
-F 2 "" H 5250 5150 50  0001 C CNN
-F 3 "" H 5250 5150 50  0001 C CNN
-	1    5250 5150
+P 1850 6500
+F 0 "#PWR0102" H 1850 6350 50  0001 C CNN
+F 1 "+3.3V" V 1865 6628 50  0000 L CNN
+F 2 "" H 1850 6500 50  0001 C CNN
+F 3 "" H 1850 6500 50  0001 C CNN
+	1    1850 6500
 	0    -1   -1   0   
 $EndComp
 $Comp
@@ -310,7 +299,7 @@ F 3 "" H 2000 5450 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Notes 1800 3250 0    50   ~ 0
-Battery measurement
+Battery Measurement
 $Comp
 L Device:R R1
 U 1 1 60956F0E
@@ -421,17 +410,6 @@ F 3 "" H 4950 2650 50  0001 C CNN
 	1    4950 2650
 	0    1    1    0   
 $EndComp
-$Comp
-L power:+3.3V #PWR0115
-U 1 1 6096EC8B
-P 6250 2450
-F 0 "#PWR0115" H 6250 2300 50  0001 C CNN
-F 1 "+3.3V" V 6265 2578 50  0000 L CNN
-F 2 "" H 6250 2450 50  0001 C CNN
-F 3 "" H 6250 2450 50  0001 C CNN
-	1    6250 2450
-	0    1    1    0   
-$EndComp
 Text GLabel 6250 2550 2    50   Input ~ 0
 MCU_SCL
 Text GLabel 6250 2750 2    50   Input ~ 0
@@ -459,8 +437,6 @@ Text GLabel 4950 3250 0    50   Input ~ 0
 LORA_DIO1
 Text GLabel 4950 3350 0    50   Input ~ 0
 LORA_DIO0
-NoConn ~ 4950 2350
-NoConn ~ 4950 2450
 NoConn ~ 4950 2550
 NoConn ~ 4950 2850
 NoConn ~ 4950 2950
@@ -468,23 +444,23 @@ NoConn ~ 4950 3050
 $Comp
 L Device:R R4
 U 1 1 6097595C
-P 5650 5700
-F 0 "R4" H 5550 5650 50  0000 R CNN
-F 1 "4,7K" H 5550 5750 50  0000 R CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 5580 5700 50  0001 C CNN
-F 3 "~" H 5650 5700 50  0001 C CNN
-	1    5650 5700
+P 2250 7050
+F 0 "R4" H 2150 7000 50  0000 R CNN
+F 1 "4,7K" H 2150 7100 50  0000 R CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 2180 7050 50  0001 C CNN
+F 3 "~" H 2250 7050 50  0001 C CNN
+	1    2250 7050
 	-1   0    0    1   
 $EndComp
 $Comp
 L Device:R R3
 U 1 1 6097622B
-P 5500 5700
-F 0 "R3" H 5300 5750 50  0000 L CNN
-F 1 "4,7K" H 5250 5650 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 5430 5700 50  0001 C CNN
-F 3 "~" H 5500 5700 50  0001 C CNN
-	1    5500 5700
+P 2100 7050
+F 0 "R3" H 1900 7100 50  0000 L CNN
+F 1 "4,7K" H 1850 7000 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder" V 2030 7050 50  0001 C CNN
+F 3 "~" H 2100 7050 50  0001 C CNN
+	1    2100 7050
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -510,47 +486,47 @@ F 3 "" H 8450 5600 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Notes 2400 5100 2    50   ~ 0
-Power input
+Power Input
 Wire Wire Line
 	9450 2550 9800 2550
 $Comp
 L power:+3.3V #PWR0117
 U 1 1 6099E9B5
-P 5250 5850
-F 0 "#PWR0117" H 5250 5700 50  0001 C CNN
-F 1 "+3.3V" V 5265 5978 50  0000 L CNN
-F 2 "" H 5250 5850 50  0001 C CNN
-F 3 "" H 5250 5850 50  0001 C CNN
-	1    5250 5850
+P 1850 7200
+F 0 "#PWR0117" H 1850 7050 50  0001 C CNN
+F 1 "+3.3V" V 1865 7328 50  0000 L CNN
+F 2 "" H 1850 7200 50  0001 C CNN
+F 3 "" H 1850 7200 50  0001 C CNN
+	1    1850 7200
 	0    -1   -1   0   
 $EndComp
-Text GLabel 5250 5350 0    50   Input ~ 0
+Text GLabel 1850 6700 0    50   Input ~ 0
 MCU_SCL
-Text GLabel 5250 5450 0    50   Input ~ 0
+Text GLabel 1850 6800 0    50   Input ~ 0
 MCU_SDA
 Wire Wire Line
-	5250 5150 5750 5150
+	1850 6500 2350 6500
 Wire Wire Line
-	5250 5250 5750 5250
+	1850 6600 2350 6600
 Wire Wire Line
-	5250 5350 5500 5350
+	1850 6700 2100 6700
 Wire Wire Line
-	5250 5450 5650 5450
+	1850 6800 2250 6800
 Wire Wire Line
-	5500 5350 5500 5550
-Connection ~ 5500 5350
+	2100 6700 2100 6900
+Connection ~ 2100 6700
 Wire Wire Line
-	5500 5350 5750 5350
+	2100 6700 2350 6700
 Wire Wire Line
-	5650 5450 5650 5550
-Connection ~ 5650 5450
+	2250 6800 2250 6900
+Connection ~ 2250 6800
 Wire Wire Line
-	5650 5450 5750 5450
+	2250 6800 2350 6800
 Wire Wire Line
-	5500 5850 5650 5850
+	2100 7200 2250 7200
 Wire Wire Line
-	5500 5850 5250 5850
-Connection ~ 5500 5850
+	2100 7200 1850 7200
+Connection ~ 2100 7200
 $Comp
 L Sensor_Temperature:DS18B20 U3
 U 1 1 609AC62D
@@ -625,17 +601,6 @@ F 3 "" H 5500 4050 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 2300 3600
-$Comp
-L power:GND #PWR0113
-U 1 1 60A8036D
-P 6250 2250
-F 0 "#PWR0113" H 6250 2000 50  0001 C CNN
-F 1 "GND" V 6255 2122 50  0000 R CNN
-F 2 "" H 6250 2250 50  0001 C CNN
-F 3 "" H 6250 2250 50  0001 C CNN
-	1    6250 2250
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	8950 1950 8950 2150
 Wire Wire Line
@@ -659,4 +624,80 @@ Wire Wire Line
 Connection ~ 9200 5400
 Wire Wire Line
 	9200 5400 9400 5400
+$Comp
+L Connector_Generic:Conn_01x04 J4
+U 1 1 60E0E019
+P 5650 5300
+F 0 "J4" H 5750 5300 50  0000 L CNN
+F 1 "Conn_01x04" H 5750 5200 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 5650 5300 50  0001 C CNN
+F 3 "~" H 5650 5300 50  0001 C CNN
+	1    5650 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0113
+U 1 1 60E0F653
+P 5450 5300
+F 0 "#PWR0113" H 5450 5050 50  0001 C CNN
+F 1 "GND" V 5450 5100 50  0000 C CNN
+F 2 "" H 5450 5300 50  0001 C CNN
+F 3 "" H 5450 5300 50  0001 C CNN
+	1    5450 5300
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR0115
+U 1 1 60E0FE11
+P 5450 5200
+F 0 "#PWR0115" H 5450 5050 50  0001 C CNN
+F 1 "+3.3V" V 5465 5328 50  0000 L CNN
+F 2 "" H 5450 5200 50  0001 C CNN
+F 3 "" H 5450 5200 50  0001 C CNN
+	1    5450 5200
+	0    -1   -1   0   
+$EndComp
+$Comp
+L foorschtbar:Arduino_Pro_Mini X1
+U 1 1 605FF6FF
+P 5500 2900
+F 0 "X1" H 5600 4199 60  0000 C CNN
+F 1 "Arduino_Pro_Mini" H 5600 4093 60  0000 C CNN
+F 2 "foorschtbar:Arduino_Pro_Mini" H 5600 3987 60  0000 C CNN
+F 3 "https://www.arduino.cc/en/Main/ArduinoBoardProMini" H 5600 3881 60  0000 C CNN
+	1    5500 2900
+	1    0    0    -1  
+$EndComp
+Text GLabel 4950 2350 0    50   Input ~ 0
+TXD
+Text GLabel 4950 2450 0    50   Input ~ 0
+RXD
+$Comp
+L power:GND #PWR0121
+U 1 1 60E12A6E
+P 6250 2250
+F 0 "#PWR0121" H 6250 2000 50  0001 C CNN
+F 1 "GND" V 6255 2122 50  0000 R CNN
+F 2 "" H 6250 2250 50  0001 C CNN
+F 3 "" H 6250 2250 50  0001 C CNN
+	1    6250 2250
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+3.3V #PWR0122
+U 1 1 60E13D08
+P 6250 2450
+F 0 "#PWR0122" H 6250 2300 50  0001 C CNN
+F 1 "+3.3V" V 6250 2700 50  0000 C CNN
+F 2 "" H 6250 2450 50  0001 C CNN
+F 3 "" H 6250 2450 50  0001 C CNN
+	1    6250 2450
+	0    1    1    0   
+$EndComp
+Text Notes 5750 5000 2    50   ~ 0
+Programming Port
+Text GLabel 5450 5400 0    50   Input ~ 0
+RXD
+Text GLabel 5450 5500 0    50   Input ~ 0
+TXD
 $EndSCHEMATC

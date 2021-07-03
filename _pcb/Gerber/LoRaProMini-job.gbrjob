@@ -7,7 +7,7 @@
       "Application": "Pcbnew",
       "Version":     "(5.1.10)-1"
     },
-    "CreationDate":  "2021-06-05T23:03:48+02:00"
+    "CreationDate":  "2021-07-03T17:53:54+02:00"
   },
   "GeneralSpecs":
   {
@@ -15,11 +15,11 @@
     {
       "Name": "LoRaProMini",
       "GUID": "4c6f5261-5072-46f4-9d69-6e692e6b6963",
-      "Revision": "2.0"
+      "Revision": "2.1"
     },
     "Size":
     {
-      "X": 90.050,
+      "X": 92.040,
       "Y": 27.050
     },
     "LayerNumber": 2,
