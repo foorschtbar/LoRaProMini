@@ -5,9 +5,9 @@
 A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and RFM95W/SX1276 LoRa module. Uses a Bosch BME280 (humidity, barometric pressure and ambient temperature) sensor to measure inside the enclosure and a Maxim DS18B20(+)/DS18s20(+)/DS1822 1-Wire sensor to measure temperature outside the enclosure. The PCB is installed in a solar lamp and supplied with power from it. Between the data transmissions, the Arduino, LoRa module and all sensors go into deep sleep mode to save power.
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
-![PCB Front](.github/pcb_front.png)
+<!--- ![PCB Front](.github/pcb_front.png) --->
 ![PCB Back Assembled](.github/pcb_back_assembled.png)
-![PCB Back](.github/pcb_back.png)
+<!--- ![PCB Back](.github/pcb_back.png) --->
 ![PCB KiCad](.github/pcb_kicad.png)
 
 ## ToDo
@@ -17,8 +17,9 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 - [ ] Build HTML/JS Interface to build configs
 - [x] Add CRC32 check
 - [x] Test ABP
-- [ ] Test OTAA
+- [x] Test OTAA
 - [ ] Add CI/CD pipeline to build firmware
+- [ ] Go to sleep immediately when voltage is too low
 
 ## TTN Payload decoder
 ```javascript

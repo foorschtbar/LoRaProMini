@@ -88,25 +88,19 @@ typedef struct
 } configData_t;
 configData_t cfg; // Instance 'cfg' is a global variable with 'configData_t' structure now
 
-// #ifdef ABP
-// // These callbacks are only used in over-the-air activation, so they are left empty here
-// void os_getArtEui(u1_t *buf) {}
-// void os_getDevEui(u1_t *buf) {}
-// void os_getDevKey(u1_t *buf) {}
-// #else
+// These callbacks are used in over-the-air activation
 void os_getArtEui(u1_t *buf)
 {
-  memcpy_P(buf, cfg.APPEUI, 8);
+  memcpy(buf, cfg.APPEUI, 8);
 }
 void os_getDevEui(u1_t *buf)
 {
-  memcpy_P(buf, cfg.DEVEUI, 8);
+  memcpy(buf, cfg.DEVEUI, 8);
 }
 void os_getDevKey(u1_t *buf)
 {
-  memcpy_P(buf, cfg.APPKEY, 16);
+  memcpy(buf, cfg.APPKEY, 16);
 }
-// #endif
 
 // ++++++++++++++++++++++++++++++++++++++++
 //
@@ -232,7 +226,7 @@ void setConfig()
   if (crc_data == crc_calculated)
   {
 
-    Serial.println("> Checksum correct");
+    Serial.println("> Checksum correct. Configuration saved!");
 
     for (uint8_t i = CFG_START; i < sizeof(cfg); i++)
     {
@@ -241,12 +235,10 @@ void setConfig()
 
     readConfig();
 
-    Serial.println("> Configuration saved!");
   }
   else
   {
-    Serial.println("> Invalid Checksum.");
-    Serial.println("> Process aborted! ");
+    Serial.println("> INVALID CHECKSUM! Process aborted! ");
   }
 }
 
@@ -478,20 +470,14 @@ void do_send(osjob_t *j)
 
 void lmicStartup()
 {
-
   // Reset the MAC state. Session and pending data transfers will be discarded.
   LMIC_reset();
 
   // #ifdef ABP
   if (cfg.ACTIVATION_METHOD == ABP)
   {
-
     // Set static session parameters. Instead of dynamically establishing a session
     // by joining the network, precomputed session parameters are be provided.
-    // uint8_t appskey[sizeof(APPSKEY)];
-    // uint8_t nwkskey[sizeof(NWKSKEY)];
-    // memcpy_P(appskey, APPSKEY, sizeof(APPSKEY));
-    // memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
     LMIC_setSession(0x13, cfg.DEVADDR, cfg.NWKSKEY, cfg.APPSKEY);
 
 #if defined(CFG_eu868)
@@ -619,15 +605,14 @@ void onEvent(ev_t ev)
 {
   switch (ev)
   {
-    break;
+    #ifdef DEBUG
   case EV_JOINING:
-#ifdef DEBUG
-    Serial.println(F("LoRa joining..."));
-#endif
+Serial.println(F("LoRa joining..."));
     break;
+#endif
   case EV_JOINED:
 #ifdef DEBUG
-    Serial.println(F("LoRa joined"));
+    Serial.println(F("LoRa joined!"));
 #endif
     // #ifndef ABP
     if (cfg.ACTIVATION_METHOD == OTAA)
@@ -666,16 +651,18 @@ void onEvent(ev_t ev)
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_REJOIN_FAILED:
-#ifdef VERBOSE
+#ifdef DEBUG
     Serial.println(F("EV_REJOIN_FAILED"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_TXCOMPLETE:
-#ifdef VERBOSE
+#ifdef DEBUG
     Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
     if (LMIC.txrxFlags & TXRX_ACK)
       Serial.println(F("> Received ack"));
+#endif
+#ifdef VERBOSE
     if (LMIC.dataLen)
     {
 
@@ -721,63 +708,22 @@ void onEvent(ev_t ev)
     // Schedule next transmission
     os_setCallback(&sendjob, do_send);
     break;
-  case EV_LOST_TSYNC:
-#ifdef VERBOSE
-    Serial.println(F("EV_LOST_TSYNC"));
-#endif
-    break;
-  case EV_RESET:
-#ifdef VERBOSE
-    Serial.println(F("EV_RESET"));
-#endif
-
-    break;
-  case EV_RXCOMPLETE:
-#ifdef VERBOSE
-    // data received in ping slot
-    Serial.println(F("EV_RXCOMPLETE"));
-#endif
-    break;
-  case EV_LINK_DEAD:
-#ifdef VERBOSE
-    Serial.println(F("EV_LINK_DEAD"));
-#endif
-    break;
-  case EV_LINK_ALIVE:
-#ifdef VERBOSE
-    Serial.println(F("EV_LINK_ALIVE"));
-#endif
-    break;
-  case EV_TXSTART:
 #ifdef DEBUG
-    Serial.println(F("LoRa TX start..."));
-#endif
-    break;
-  case EV_TXCANCELED:
-#ifdef VERBOSE
-    Serial.println(F("EV_TXCANCELED"));
-#endif
-    break;
-  case EV_RXSTART:
-    /* do not print anything -- it wrecks timing */
-    break;
   case EV_JOIN_TXCOMPLETE:
-#ifdef DEBUG
     Serial.println(F("LoRa NO JoinAccept"));
-#endif
     break;
+#endif
+#ifdef DEBUG
   default:
-#ifdef VERBOSE
     Serial.print(F("Unknown event: "));
     Serial.println((unsigned)ev);
-#endif
     break;
+#endif
   }
 }
 
 void setup()
 {
-
   // use the 1.1 V internal reference
   analogReference(INTERNAL);
 
