@@ -14,11 +14,12 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 
 - [x] Move config to EEPROM
 - [x] Added special firmware to change configs
-- [ ] Build HTML/JS Interface to build configs
+- [x] Build HTML/JS Interface to build configs
 - [x] Add CRC32 check
 - [x] Test ABP
 - [x] Test OTAA
 - [ ] Add CI/CD pipeline to build firmware
+- [ ] Deploy config tool via GitHub Pages
 - [ ] Go to sleep immediately when voltage is too low
 
 ## TTN Payload decoder

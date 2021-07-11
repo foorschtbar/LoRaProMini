@@ -71,10 +71,10 @@ const lmic_pinmap lmic_pins = {
 
 typedef struct
 {
-  uint8_t CONFIG_IS_VALID;   // 1 byte -
+  uint8_t CONFIG_IS_VALID;   // 1 byte
   uint16_t SLEEPTIME;        // 2 byte - (Deep) Sleep time between data acquisition and transmission
-  float BAT_SENSE_VBP;       // 4 byte -
-  float BAT_MIN_VOLTAGE;     // 4 byte -
+  float BAT_SENSE_VBP;       // 4 byte - Volts per Bit. See documentation
+  float BAT_MIN_VOLTAGE;     // 4 byte - Minimum voltage for operation, otherwise the node continues to sleep
   uint8_t ACTIVATION_METHOD; // 1 byte - 1 = OTAA, 2 = ABP
   // ABP
   u1_t NWKSKEY[16]; // 16 byte - NwkSKey, network session key in big-endian format (aka msb).
