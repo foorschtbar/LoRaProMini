@@ -272,17 +272,17 @@ void showConfig(bool raw = false)
     Serial.println("Unkown");
     break;
   }
-  Serial.print("> NWKSKEY: ");
+  Serial.print("> NWKSKEY (MSB): ");
   printHex(cfg.NWKSKEY, sizeof(cfg.NWKSKEY));
-  Serial.print("\n> APPSKEY: ");
+  Serial.print("\n> APPSKEY (MSB): ");
   printHex(cfg.APPSKEY, sizeof(cfg.APPSKEY));
-  Serial.print("\n> DEVADDR: 0x");
+  Serial.print("\n> DEVADDR (MSB): ");
   Serial.print(cfg.DEVADDR, HEX);
-  Serial.print("\n> APPEUI: ");
+  Serial.print("\n> APPEUI (LSB): ");
   printHex(cfg.APPEUI, sizeof(cfg.APPEUI));
-  Serial.print("\n> DEVEUI: ");
+  Serial.print("\n> DEVEUI (LSB): ");
   printHex(cfg.DEVEUI, sizeof(cfg.DEVEUI));
-  Serial.print("\n> APPKEY: ");
+  Serial.print("\n> APPKEY (MSB): ");
   printHex(cfg.APPKEY, sizeof(cfg.APPKEY));
   Serial.println();
 
@@ -625,12 +625,12 @@ Serial.println(F("LoRa joining..."));
         LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
         Serial.print(F("> NetID: "));
         Serial.println(netid, DEC);
-        Serial.print(F("> DevAddr: "));
+        Serial.print(F("> DevAddr (MSB): "));
         Serial.println(devaddr, HEX);
-        Serial.print(F("> AppSKey: "));
+        Serial.print(F("> AppSKey (MSB): "));
         printHex(artKey, sizeof(artKey));
         Serial.println();
-        Serial.print(F("> NwkSKey: "));
+        Serial.print(F("> NwkSKey (MSB): "));
         printHex(nwkKey, sizeof(nwkKey));
         Serial.println();
       }

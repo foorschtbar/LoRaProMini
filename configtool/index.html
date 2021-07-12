@@ -71,17 +71,17 @@
                 </div>
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="floatingInput" name="APPEUI">
-                    <label for="APPEUI">OTAA: Application EUI (LSB, 8 bytes)</label>
+                    <label for="APPEUI">OTAA: Application EUI (MSB, 8 bytes)</label>
                     <div class="invalid-feedback" id="APPEUI_feedback"></div>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="floatingInput" name="DEVEUI">
-                    <label for="DEVEUI">OTAA: Device EUI (LSB, 8 bytes)</label>
+                    <label for="DEVEUI">OTAA: Device EUI (MSB, 8 bytes)</label>
                     <div class="invalid-feedback" id="DEVEUI_feedback"></div>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="floatingInput" name="APPKEY">
-                    <label for="APPKEY">OTAA: Application Session Key (MSB, 16 bytes)</label>
+                    <label for="APPKEY">OTAA: Application Key (MSB, 16 bytes)</label>
                     <div class="invalid-feedback" id="APPKEY_feedback"></div>
                 </div>
 
@@ -140,8 +140,8 @@
         "NWKSKEY": ["str", "16", false, 2],
         "APPSKEY": ["str", "16", false, 2],
         "DEVADDR": ["str", "4", true, 2],
-        "APPEUI": ["str", "8", false, 1],
-        "DEVEUI": ["str", "8", false, 1],
+        "APPEUI": ["str", "8", true, 1],
+        "DEVEUI": ["str", "8", true, 1],
         "APPKEY": ["str", "16", false, 1],
     };
 

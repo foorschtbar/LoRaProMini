@@ -10,6 +10,11 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 <!--- ![PCB Back](.github/pcb_back.png) --->
 ![PCB KiCad](.github/pcb_kicad.png)
 
+## The Things Stack configuration
+
+- LoRaWAN version `MAC V1.0.3`
+- ...
+
 ## ToDo
 
 - [x] Move config to EEPROM
@@ -21,7 +26,9 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 - [ ] Add CI/CD pipeline to build firmware
 - [ ] Deploy config tool via GitHub Pages
 - [ ] Go to sleep immediately when voltage is too low
-
+- [ ] Fix problem when checksum in pastend config had zeros O.o
+- [ ] Add random EUI generator button to config tool
+ 
 ## TTN Payload decoder
 ```javascript
 function Decoder(bytes, port) {
