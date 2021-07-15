@@ -1,0 +1,18 @@
+ input,
+ textarea,
+ select {
+     font-family: 'Courier New', Courier, monospace;
+ }
+
+ label {
+     z-index: 99999;
+ }
+
+ input[readonly],
+ textarea[readonly] {
+     background-color: #64646408 !important;
+ }
+
+ *[disabled] {
+     color: #959595;
+ }

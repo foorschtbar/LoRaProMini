@@ -27,7 +27,8 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 - [ ] Deploy config tool via GitHub Pages
 - [ ] Go to sleep immediately when voltage is too low
 - [ ] Fix problem when checksum in pastend config had zeros O.o
-- [ ] Add random EUI generator button to config tool
+- [x] Add random EUI generator button to config tool
+- [x] Parse config string to GUI fields
  
 ## TTN Payload decoder
 ```javascript
