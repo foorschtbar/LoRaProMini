@@ -10,7 +10,6 @@ TinyBME::TinyBME()
 // initialise the bus
 bool TinyBME::begin(uint8_t addr)
 {
-    bool status = false;
     _i2caddr = addr;
     _wire = &Wire;
 
