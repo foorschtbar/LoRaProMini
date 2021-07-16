@@ -41,14 +41,29 @@
                     <label for="SLEEPTIME">(Deep) Sleep time between data acquisition and transmission (2 byte)</label>
                     <div class="invalid-feedback"></div>
                 </div>
-                <div class="form-floating mb-3">
+                <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="BAT_SENSE_VBP">
                     <label for="BAT_SENSE_VBP">Volts per Bit. See documentation (4 bytes)</label>
+                    <button class="btn btn-outline-primary calc" type="button" title="Copy">
+                        <i class="bi bi-calculator"></i>
+                    </button>
                     <div class="invalid-feedback"></div>
+                </div>
+                <div class="container col-lg-6" id="calc">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Measured voltage">
+                        <input type="text" class="form-control" placeholder="Analoge value">
+                        <button class="btn btn-outline-danger remove" type="button" title="Remove row">
+                            <i class="bi bi-x-square"></i>
+                        </button>
+                        <button class="btn btn-outline-success add" type="button" title="Add row">
+                            <i class="bi bi-plus-square"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="BAT_MIN_VOLTAGE">
-                    <label for="BAT_MIN_VOLTAGE">Minimum voltage for operation, otherwise the node continues to sleep (4
+                    <label for="BAT_MIN_VOLTAGE">Minimum voltage for operation, otherwise the node continues sleeping (4
                         bytes)</label>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -64,33 +79,33 @@
                 <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="NWKSKEY" name="NWKSKEY">
                     <label for="NWKSKEY">Network Session Key (MSB, 16 bytes)</label>
-                    <button class="btn btn-outline-secondary generate" type="button" title="Generate">
+                    <button class="btn btn-outline-primary generate" type="button" title="Generate">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="APPSKEY">
                     <label for="APPSKEY">App Session Key (MSB, 16 bytes)</label>
-                    <button class="btn btn-outline-secondary generate" type="button" title="Generate">
+                    <button class="btn btn-outline-primary generate" type="button" title="Generate">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="DEVADDR">
                     <label for="DEVADDR">Device Address (MSB, 4 bytes)</label>
-                    <button class="btn btn-outline-secondary generate" type="button" title="Generate">
+                    <button class="btn btn-outline-primary generate" type="button" title="Generate">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -98,33 +113,33 @@
                 <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="APPEUI">
                     <label for="APPEUI">Application EUI (MSB, 8 bytes)</label>
-                    <button class="btn btn-outline-secondary generate" type="button" title="Generate">
+                    <button class="btn btn-outline-primary generate" type="button" title="Generate">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="DEVEUI">
                     <label for="DEVEUI">Device EUI (MSB, 8 bytes)</label>
-                    <button class="btn btn-outline-secondary generate" type="button" title="Generate">
+                    <button class="btn btn-outline-primary generate" type="button" title="Generate">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating input-group has-validation mb-3">
                     <input type="text" class="form-control" id="APPKEY">
                     <label for="APPKEY">Application Key (MSB, 16 bytes)</label>
-                    <button class="btn btn-outline-secondary generate" type="button" title="Generate">
+                    <button class="btn btn-outline-primary generate" type="button" title="Generate">
                         <i class="bi bi-arrow-repeat"></i>
                     </button>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -134,8 +149,8 @@
                 <div class="form-floating input-group mb-3 has-validation">
                     <textarea id="configStr" style="height: 100px;" class="form-control"></textarea>
                     <label for="configStr">Configuration</label>
-                    <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                        <i class="bi bi-clipboard"></i>
+                    <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                        <i class="bi bi-clipboard-plus"></i>
                     </button>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -156,8 +171,8 @@
                         <div class="form-floating input-group">
                             <input type="text" class="form-control text-center" id="configCRC32" readonly>
                             <label for="configCRC32">Checksum (CRC32)</label>
-                            <button class="btn btn-outline-secondary copy" type="button" title="Copy">
-                                <i class="bi bi-clipboard"></i>
+                            <button class="btn btn-outline-primary copy" type="button" title="Copy">
+                                <i class="bi bi-clipboard-plus"></i>
                             </button>
                         </div>
                     </div>
