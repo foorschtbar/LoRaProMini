@@ -177,40 +177,45 @@ void readConfig()
 void setConfig()
 {
   byte newcfg[sizeof(cfg) + 4];
-  byte buffer[2];
-  uint32_t crc_data;
+  char buffer[3];
+  char *pEnd;
+  uint32_t crc_data = 0;
   CRC32 crc;
 
   for (uint8_t i = 0; i < sizeof(newcfg); i++)
   {
-    // if (Serial.available() > 0)
-    // {
-    Serial.readBytes(buffer, 2);
-    newcfg[i] = strtol((char *)buffer, 0, 16);
-    if (i < sizeof(newcfg) - 4)
+    if (!Serial.readBytes(buffer, 2))
     {
-      crc.update(buffer);
+      break;
+    }
+
+    // added null-terminator for strtol
+    buffer[3] = '\0';
+
+    // convert null-terminated char buffer with hex values to int
+    newcfg[i] = (byte)strtol(buffer, &pEnd, 16);
+
+    if (i < sizeof(cfg))
+    {
+      // Add hex chars from buffer without null-terminator
+      crc.update(buffer, 2);
     }
     else
     {
-      crc_data = crc_data << 8;
+      // Store checksum from serial input
+      // later compare
+      crc_data <<= 8;
       crc_data |= newcfg[i];
     }
-    // }
-    // else
-    // {
-    //   newcfg[i] = 0x00;
-    // }
 
+    // Pad to 8 bit
+    // Add zero prefix to serial output
     newcfg[i] &= 0xff;
     if (newcfg[i] < 16)
-    {
       Serial.write(48); // 0
-    }
+
     Serial.print(newcfg[i], HEX);
     Serial.print(" ");
-
-    // delay(10);
   }
 
   Serial.println();
@@ -234,7 +239,6 @@ void setConfig()
     }
 
     readConfig();
-
   }
   else
   {
@@ -326,10 +330,10 @@ void serialMenu()
 {
   unsigned long timer = millis();
 
-  Serial.println("\n\n== CONFIG MENU ==");
-  Serial.println("[1] Show config");
-  Serial.println("[2] Set config");
-  Serial.println("[3] Erase config");
+  Serial.println("\n== CONFIG MENU ==");
+  Serial.println("[1] Show current config");
+  Serial.println("[2] Set new config");
+  Serial.println("[3] Erase current config");
   Serial.println("[4] Voltage calibration");
   Serial.print("Select: ");
   serialWait();
@@ -365,6 +369,7 @@ void serialMenu()
         {
           eraseConfig();
           Serial.println("Successfull!");
+          readConfig();
         }
         else
         {
@@ -605,9 +610,9 @@ void onEvent(ev_t ev)
 {
   switch (ev)
   {
-    #ifdef DEBUG
+#ifdef DEBUG
   case EV_JOINING:
-Serial.println(F("LoRa joining..."));
+    Serial.println(F("LoRa joining..."));
     break;
 #endif
   case EV_JOINED:
@@ -805,16 +810,16 @@ void setup()
 #ifdef DEBUG
   Serial.print(F("Search BME280..."));
 #endif
-  if (!bme.begin(I2C_ADR_BME))
+  if (bme.begin(I2C_ADR_BME))
   {
 #ifdef DEBUG
-    Serial.println(F("not found"));
+    Serial.println(F("1 found"));
 #endif
   }
   else
   {
 #ifdef DEBUG
-    Serial.println(F("1 found"));
+    Serial.println(F("not found"));
 #endif
   }
 
