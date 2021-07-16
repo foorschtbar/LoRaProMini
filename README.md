@@ -17,15 +17,26 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 
 ## How to use
 
-1. Flash config firmware
+1. Flash config firmware (See [How to flash](#how-to-flash))
 1. Start voltage calibration from menu
-1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 5V.
-1. Use volts-per-bit calculator to get VBP factor for config.
+1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 5V
+1. Use volts-per-bit calculator to get VBP factor for config
 1. Create configuration with [Configuration Builder](https://foorschtbar.github.io/LoRaProMini/)
 1. Write configuration to EEPROM using configuration menu
 1. Check written configuration via configuration menu
-1. Flash debug or release firmware
+1. Flash debug or release firmware (See [How to flash](#how-to-flash))
 1. Finish
+
+## How to flash
+
+```
+avrdude-F -v -c arduino -p atmega328p -P <COM PORT> -b 57600 -D -U flash:w:<FIRMWARE FILE>:i
+```
+
+Example:
+```
+avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1.0_config.hex:i
+```
 
 ## ToDo
 
