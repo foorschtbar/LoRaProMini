@@ -42,7 +42,7 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 - [x] Add CI/CD pipeline to build firmware
 - [ ] Go to sleep immediately when voltage is too low
-- [ ] Rewirte VBP calculator in Configuration Builder
+- [x] Rewirte VBP calculator in Configuration Builder
 - [x] Move config to EEPROM
 - [x] Added special firmware to change configs
 - [x] Build HTML/JS Interface to build configs

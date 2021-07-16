@@ -1,4 +1,4 @@
-$("button").click(function (e) {
+$("form").on('click', 'button:not(:disabled)', function (e) {
     e.preventDefault();
     let field = $(this).prevAll("input, textarea");
     let fieldname = $(this).prevAll("input, textarea").attr("id");
@@ -19,11 +19,29 @@ $("button").click(function (e) {
         try {
             document.execCommand('copy');
         } catch (err) {}
+    } else if ($(this).hasClass("calc")) {
+        $("#calc").toggle();
+        calcVBP();
+
+    } else if ($(this).hasClass("add")) {
+        let masterrow = $("#calc > div:first");
+        masterrow.clone().appendTo("#calc").find("input[type='text']").val("");
+        calcVBP();
+        checkVBPInputs();
+
+    } else if ($(this).hasClass("remove")) {
+        $(this).parent().remove();
+        calcVBP();
+        checkVBPInputs();
     }
 
 });
 
-$("select, input").on('keyup change', function (e) {
+$("form").on('keyup change', '#calc input', function (e) {
+    calcVBP(e);
+});
+
+$(":not(#calc) input, select").on('keyup change', function (e) {
     makeConfig(e);
 });
 
@@ -33,7 +51,68 @@ $("#configStr").on('keyup blur change', function (e) {
 
 $(document).ready(function (e) {
     makeConfig(e);
+    checkVBPInputs();
 });
+
+function checkVBPInputs() {
+    $("#calc>div>button.add").prop("disabled", false).removeClass("btn-outline-secondary").addClass("btn-outline-success");
+    $("#calc>div>button.remove").prop("disabled", false).removeClass("btn-outline-secondary").addClass("btn-outline-danger");
+    $("#calc>div:not(:last-child)>button.add").prop("disabled", true).removeClass("btn-outline-success").addClass("btn-outline-secondary");
+    $("#calc>div:only-child>button.remove").prop("disabled", true).removeClass("btn-outline-danger").addClass("btn-outline-secondary");
+}
+
+function calcVBP(event) {
+
+    let fields = $("#calc input");
+    let vbp = 0;
+    let count = 0;
+    for (i = 0; i < fields.length; i += 2) {
+        let error = false;
+
+        let f1 = $(fields[i]);
+        let f2 = $(fields[i + 1]);
+        let voltage = parseFloat(f1.val());
+        let analog = parseFloat(f2.val());
+
+        // if (f1.val().trim().length != 0) {
+        if (voltage == "" || isNaN(voltage) || f1.val().match(/,/g)) {
+            error = true;
+            f1.removeClass("is-valid").addClass("is-invalid");
+        } else {
+            f1.removeClass("is-invalid").addClass("is-valid");
+        }
+        // } else {
+        //     error = true;
+        //     f1.removeClass("is-invalid").removeClass("is-valid");
+        // }
+
+
+        // if (f2.val().trim().length != 0) {
+        if (analog == "" || isNaN(analog) || f2.val().match(/,/g)) {
+            error = true;
+            f2.removeClass("is-valid").addClass("is-invalid");
+        } else {
+            f2.removeClass("is-invalid").addClass("is-valid");
+        }
+        // } else {
+        //     error = true;
+        //     f2.removeClass("is-invalid").removeClass("is-valid");
+        // }
+
+        if (!error) {
+            vbp += (voltage / analog);
+            count++;
+        }
+
+    }
+
+    if (count > 0) {
+        vbp /= count;
+    }
+
+    $("#BAT_SENSE_VBP").val(vbp).change();
+
+}
 
 function getConfigLen() {
     let len = 0;
@@ -129,7 +208,7 @@ function makeConfig(event, parseConfig = false, checkOnly = false) {
                                     case "int":
                                         num = parseInt(field.val());
 
-                                        if (!isNaN(num)) {
+                                        if (!isNaN(num) && !field.val().match(/,/g)) {
                                             if (num >= 0) {
                                                 hexStr = padHexStr(num.toString(16), datatypeSize * 2);
 
@@ -147,7 +226,7 @@ function makeConfig(event, parseConfig = false, checkOnly = false) {
                                     case "float":
                                         num = parseFloat(field.val());
 
-                                        if (!isNaN(num)) {
+                                        if (!isNaN(num) && !field.val().match(/,/g)) {
                                             if (num >= 0) {
                                                 hexStr = Float32ToHex(num);
                                             } else {

@@ -16,3 +16,20 @@
  *[disabled] {
      color: #959595;
  }
+
+ /* #calc>div:not(:last-child)>button.add {
+     display: none;
+ }
+
+ #calc>div:not(:last-child)>button.remove {
+     border-top-right-radius: 0.25rem !important;
+     border-bottom-right-radius: 0.25rem !important;
+ }
+
+ #calc>div:only-child>button.remove {
+     display: none;
+ } */
+
+ #calc {
+     display: none;
+ }
