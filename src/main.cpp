@@ -408,34 +408,29 @@ void do_send(osjob_t *j)
   {
     // Signed 16 bits integer, -32767 up to +32767
     int16_t temp1 = -127;
+    int16_t temp2 = -127;
+
     // Unsigned 16 bits integer, 0 up to 65535
     uint16_t humi1 = 0;
-    // Unsigned 16 bits integer, 0 up to 65535
     uint16_t press1 = 0;
-    // Signed 16 bits integer, -32767 up to +32767
-    int16_t temp2 = -127;
-    // Unsigned 16 bits integer, 0 up to 65535
-    uint16_t bat = readBat() * 100;
+    uint16_t bat = 0;
 
-    // BME280
+    // Battery
+    bat = readBat() * 100;
+
+    // Read sensor values von BME280
+    // and multiply by 100 to effectively keep 2 decimals
     bme.takeForcedMeasurement();
-
-    // Read sensor values and multiply by 100 to effectively keep 2 decimals
     temp1 = bme.readTemperature() * 100;
-    // t = t + 40; => t [-40..+85] => [0..125] => t = t * 10; => t [0..125] => [0..1250]
     humi1 = bme.readHumidity() * 100;
     press1 = bme.readPressure() / 100.0F; // p [300..1100]
 
-    // 1-Wire sensors
+    // Read sensor value form 1-Wire sensor
+    // and multiply by 100 to effectively keep 2 decimals
     ds.requestTemperatures(); // Send the command to get temperatures
+    temp2 = ds.getTempC(dsSensor) * 100;
 
-    float tempC = ds.getTempC(dsSensor);
-    if (tempC != DEVICE_DISCONNECTED_C)
-    {
-      temp2 = tempC * 100;
-    }
-
-    byte buffer[10];
+    byte buffer[12];
     buffer[0] = temp1 >> 8;
     buffer[1] = temp1;
     buffer[2] = humi1 >> 8;
@@ -446,10 +441,16 @@ void do_send(osjob_t *j)
     buffer[7] = temp2;
     buffer[8] = bat >> 8;
     buffer[9] = bat;
+    buffer[10] = VERSION_MAJOR;
+    buffer[11] = VERSION_MINOR;
     LMIC_setTxData2(1, buffer, sizeof(buffer), 0);
 
 #ifdef DEBUG
-    Serial.println(F("Prepare package for queue"));
+    Serial.println(F("Prepare package"));
+    Serial.print(F("> FW Version  "));
+    Serial.print(VERSION_MAJOR);
+    Serial.print(F("."));
+    Serial.println(VERSION_MINOR);
     Serial.print(F("> BME Temp:   "));
     Serial.println(temp1);
     Serial.print(F("> BME Humi:   "));
@@ -460,7 +461,7 @@ void do_send(osjob_t *j)
     Serial.println(temp2);
     Serial.print(F("> Batt:       "));
     Serial.println(bat);
-    Serial.print(F("> Payload: "));
+    Serial.print(F("> Payload:    "));
     printHex(buffer, sizeof(buffer));
     Serial.println();
 #endif
@@ -585,7 +586,7 @@ void do_sleep(uint16_t sleepTime)
 
   // sleep logic using LowPower library
   uint16_t delays[] = {8, 4, 2, 1};
-  period_t sleep[] = {SLEEP_8S, SLEEP_4S, SLEEP_2S, SLEEP_1S};
+  period_t sleeptimes[] = {SLEEP_8S, SLEEP_4S, SLEEP_2S, SLEEP_1S};
 
   for (uint8_t i = 0; i <= 3; i++)
   {
@@ -598,7 +599,7 @@ void do_sleep(uint16_t sleepTime)
       // Serial.print(" S: ");
       // Serial.println(delays[i]);
       // Serial.flush();
-      LowPower.powerDown(sleep[i], ADC_OFF, BOD_OFF);
+      LowPower.powerDown(sleeptimes[i], ADC_OFF, BOD_OFF);
       sleepTimeLeft -= delays[i];
     }
   }
@@ -608,6 +609,7 @@ void do_sleep(uint16_t sleepTime)
 
 void onEvent(ev_t ev)
 {
+  boolean sleep = true;
   switch (ev)
   {
 #ifdef DEBUG
@@ -661,6 +663,12 @@ void onEvent(ev_t ev)
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
+
+  case EV_TXSTART:
+#ifdef DEBUG
+    // Serial.println(F("EV_TXSTART"));
+#endif
+    break;
   case EV_TXCOMPLETE:
 #ifdef DEBUG
     Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
@@ -691,7 +699,6 @@ void onEvent(ev_t ev)
     LMIC.opmode = OP_SHUTDOWN;
 
     // Going to sleep
-    boolean sleep = true;
     while (sleep)
     {
       do_sleep(cfg.SLEEPTIME);
@@ -713,17 +720,30 @@ void onEvent(ev_t ev)
     // Schedule next transmission
     os_setCallback(&sendjob, do_send);
     break;
-#ifdef DEBUG
+
   case EV_JOIN_TXCOMPLETE:
-    Serial.println(F("LoRa NO JoinAccept"));
-    break;
-#endif
 #ifdef DEBUG
+    Serial.println(F("LoRa NO JoinAccept"));
+#endif
+    break;
+  case EV_BEACON_FOUND:
+  case EV_BEACON_MISSED:
+  case EV_BEACON_TRACKED:
+  case EV_RFU1:
+  case EV_LOST_TSYNC:
+  case EV_RESET:
+  case EV_RXCOMPLETE:
+  case EV_LINK_DEAD:
+  case EV_LINK_ALIVE:
+  case EV_SCAN_FOUND:
+  case EV_TXCANCELED:
+  case EV_RXSTART:
   default:
+#ifdef DEBUG
     Serial.print(F("Unknown event: "));
     Serial.println((unsigned)ev);
-    break;
 #endif
+    break;
   }
 }
 
@@ -739,7 +759,11 @@ void setup()
   Serial.begin(9600);
   delay(100); // per sample code on RF_95 test
 
-  Serial.println(F("\n=== Starting LoRaProMini ==="));
+  Serial.print(F("\n=== Starting LoRaProMini v"));
+  Serial.print(VERSION_MAJOR);
+  Serial.print(F("."));
+  Serial.print(VERSION_MINOR);
+  Serial.println(F(" ==="));
 #endif
 
   readConfig();

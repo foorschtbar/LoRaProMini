@@ -46,22 +46,33 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
  
 ## TTN Payload decoder
 ```javascript
-function Decoder(bytes, port) {
-  var temp1 = (bytes[0] & 0x80 ? 0xFFFF<<16 : 0) | bytes[0]<<8 | bytes[1];
-  var humi1 = bytes[2]<<8 | bytes[3];
-  var press1 = bytes[4]<<8 | bytes[5];
-  var temp2 = (bytes[6] & 0x80 ? 0xFFFF<<16 : 0) | bytes[6]<<8 | bytes[7];
-  var bat = bytes[8]<<8 | bytes[9];
-  return { 
-    bme : {
-      temperature: temp1 / 100, 
-      humidity: humi1 / 100, 
-      pressure: press1
-    },
-    ds18x : {
-      temperature: temp2 / 100
-      
-    },
-    battery: bat / 100} 
-} 
+function decodeUplink(input) {
+    var bytes = input.bytes;
+    var temp1 = (bytes[0] & 0x80 ? 0xFFFF << 16 : 0) | bytes[0] << 8 | bytes[1];
+    var humi1 = bytes[2] << 8 | bytes[3];
+    var press1 = bytes[4] << 8 | bytes[5];
+    var temp2 = (bytes[6] & 0x80 ? 0xFFFF << 16 : 0) | bytes[6] << 8 | bytes[7];
+    var bat = bytes[8] << 8 | bytes[9];
+    var fwversion = "0.0";
+    if(bytes.length == 12) {
+      fwversion = bytes[10] + "." + bytes[11];
+    }
+    return {
+        data: {
+            fwversion: fwversion,
+            bme: {
+                temperature: temp1 / 100,
+                humidity: humi1 / 100,
+                pressure: press1
+            },
+            ds18x: {
+                temperature: temp2 / 100
+
+            },
+            battery: bat / 100
+        },
+        warnings: [],
+        errors: []
+    }
+}
 ```
