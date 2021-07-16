@@ -2,7 +2,7 @@
 
 :warning: This project is a WIP!
 
-A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and RFM95W/SX1276 LoRa module. Uses a Bosch BME280 (humidity, barometric pressure and ambient temperature) sensor to measure inside the enclosure and a Maxim DS18B20(+)/DS18s20(+)/DS1822 1-Wire sensor to measure temperature outside the enclosure. The PCB is installed in a solar lamp and supplied with power from it. Between the data transmissions, the Arduino, LoRa module and all sensors go into deep sleep mode to save power.
+A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and RFM95W/SX1276 LoRa module. Uses a Bosch BME280 (humidity, barometric pressure and ambient temperature) sensor to measure inside the enclosure and a Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire sensor to measure temperature outside the enclosure. The PCB is installed in a solar lamp and supplied with power from it. Between the data transmissions, the Arduino, LoRa module and all sensors go into deep sleep mode to save power.
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
 <!--- ![PCB Front](.github/pcb_front.png) --->
@@ -15,20 +15,34 @@ A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and R
 - LoRaWAN version `MAC V1.0.3`
 - ...
 
+## How to use
+
+1. Flash config firmware
+1. Start voltage calibration from menu
+1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 5V.
+1. Use volts-per-bit calculator to get VBP factor for config.
+1. Create configuration with [Configuration Builder](https://foorschtbar.github.io/LoRaProMini/)
+1. Write configuration to EEPROM using configuration menu
+1. Check written configuration via configuration menu
+1. Flash debug or release firmware
+1. Finish
+
 ## ToDo
 
+- [ ] Add CI/CD pipeline to build firmware
+- [ ] Go to sleep immediately when voltage is too low
+- [ ] Rewirte VBP calculator in Configuration Builder
 - [x] Move config to EEPROM
 - [x] Added special firmware to change configs
 - [x] Build HTML/JS Interface to build configs
 - [x] Add CRC32 check
 - [x] Test ABP
 - [x] Test OTAA
-- [ ] Add CI/CD pipeline to build firmware
-- [ ] Deploy config tool via GitHub Pages
-- [ ] Go to sleep immediately when voltage is too low
+- [x] Deploy config tool via GitHub Pages
 - [x] Fix problem when checksum in pastend config had zeros O.o
 - [x] Add random EUI generator button to config tool
 - [x] Parse config string to GUI fields
+
  
 ## TTN Payload decoder
 ```javascript
