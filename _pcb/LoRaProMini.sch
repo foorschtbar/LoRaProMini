@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "LoRaProMini"
-Date "2021-07-05"
-Rev "2.1"
+Date "2021-08-31"
+Rev "2.2"
 Comp "(c) 2021 foorschtbar"
 Comment1 "https://github.com/foorschtbar/LoRaProMini"
 Comment2 ""
@@ -425,7 +425,6 @@ SPI_CS_LORA
 NoConn ~ 6250 2950
 NoConn ~ 6250 2850
 NoConn ~ 6250 2650
-NoConn ~ 6250 2350
 NoConn ~ 6250 2150
 NoConn ~ 5700 4050
 NoConn ~ 5600 4050
@@ -437,7 +436,7 @@ Text GLabel 4950 3250 0    50   Input ~ 0
 LORA_DIO1
 Text GLabel 4950 3350 0    50   Input ~ 0
 LORA_DIO0
-NoConn ~ 4950 2550
+NoConn ~ 6250 2350
 NoConn ~ 4950 2850
 NoConn ~ 4950 2950
 NoConn ~ 4950 3050
@@ -625,12 +624,12 @@ Connection ~ 9200 5400
 Wire Wire Line
 	9200 5400 9400 5400
 $Comp
-L Connector_Generic:Conn_01x04 J4
+L Connector_Generic:Conn_01x05 J4
 U 1 1 60E0E019
 P 5650 5300
-F 0 "J4" H 5750 5300 50  0000 L CNN
-F 1 "Conn_01x04" H 5750 5200 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 5650 5300 50  0001 C CNN
+F 0 "J4" H 5730 5342 50  0000 L CNN
+F 1 "Conn_01x05" H 5730 5251 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical" H 5650 5300 50  0001 C CNN
 F 3 "~" H 5650 5300 50  0001 C CNN
 	1    5650 5300
 	1    0    0    -1  
@@ -638,23 +637,23 @@ $EndComp
 $Comp
 L power:GND #PWR0113
 U 1 1 60E0F653
-P 5450 5300
-F 0 "#PWR0113" H 5450 5050 50  0001 C CNN
-F 1 "GND" V 5450 5100 50  0000 C CNN
-F 2 "" H 5450 5300 50  0001 C CNN
-F 3 "" H 5450 5300 50  0001 C CNN
-	1    5450 5300
+P 5450 5200
+F 0 "#PWR0113" H 5450 4950 50  0001 C CNN
+F 1 "GND" V 5450 5000 50  0000 C CNN
+F 2 "" H 5450 5200 50  0001 C CNN
+F 3 "" H 5450 5200 50  0001 C CNN
+	1    5450 5200
 	0    1    1    0   
 $EndComp
 $Comp
 L power:+3.3V #PWR0115
 U 1 1 60E0FE11
-P 5450 5200
-F 0 "#PWR0115" H 5450 5050 50  0001 C CNN
-F 1 "+3.3V" V 5465 5328 50  0000 L CNN
-F 2 "" H 5450 5200 50  0001 C CNN
-F 3 "" H 5450 5200 50  0001 C CNN
-	1    5450 5200
+P 5450 5100
+F 0 "#PWR0115" H 5450 4950 50  0001 C CNN
+F 1 "+3.3V" V 5465 5228 50  0000 L CNN
+F 2 "" H 5450 5100 50  0001 C CNN
+F 3 "" H 5450 5100 50  0001 C CNN
+	1    5450 5100
 	0    -1   -1   0   
 $EndComp
 $Comp
@@ -696,8 +695,12 @@ F 3 "" H 6250 2450 50  0001 C CNN
 $EndComp
 Text Notes 5750 5000 2    50   ~ 0
 Programming Port
-Text GLabel 5450 5400 0    50   Input ~ 0
+Text GLabel 5450 5300 0    50   Input ~ 0
 RXD
-Text GLabel 5450 5500 0    50   Input ~ 0
+Text GLabel 5450 5400 0    50   Input ~ 0
 TXD
+Text GLabel 4950 2550 0    50   Input ~ 0
+MCU_RST
+Text GLabel 5450 5500 0    50   Input ~ 0
+MCU_RST
 $EndSCHEMATC
