@@ -969,7 +969,7 @@ F 3 "" H 3150 5350 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Text GLabel 3150 5450 0    50   Input ~ 0
-MCU_D4
+MCU_D5
 Wire Wire Line
 	3150 5450 3300 5450
 Connection ~ 3300 5450
