@@ -19,7 +19,7 @@
 // LoRa module pins
 #define LORA_DIO0 8
 #define LORA_DIO1 7
-#define LORA_DIO2 2
+#define LORA_DIO2 LMIC_UNUSED_PIN
 #define LORA_RESET 9
 #define LORA_CS SS
 

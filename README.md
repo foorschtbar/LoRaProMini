@@ -40,8 +40,11 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 ## ToDo
 
-- [x] Add CI/CD pipeline to build firmware
+- [ ] Switch between Sensor-Node or Mailbox-Node Version?
+- [ ] Add Interrupts to LoRa message
+- [ ] Add wake from deep sleep by interrupt
 - [ ] Go to sleep immediately when voltage is too low
+- [x] Add CI/CD pipeline to build firmware
 - [x] Rewirte VBP calculator in Configuration Builder
 - [x] Move config to EEPROM
 - [x] Added special firmware to change configs
