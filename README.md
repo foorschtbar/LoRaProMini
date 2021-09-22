@@ -41,10 +41,9 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 ## ToDo
 
 - [ ] Timeout to go to sleep after
-- [ ] Combine Sensor and Mailbox Firmware OR Switch between Sensor-Node or Mailbox-Node Version?
+- [x] Added
 - [ ] Major + Minor Byte to single byte 4bits for major and 4 bits for minor
-- [ ] External Interrupt Pins Byte (Pin 1 current state, Pin 2 current state, Pin 1 last state, Pin 2 last state)
-- [ ] Ad option for Confirmed Uplink to config?
+- [ ] Add option for Confirmed Uplink to config?
 - [ ] Timeout for Wire (I2C) Libary
 - [ ] Go to sleep immediately when voltage is too low
 - [x] Add CI/CD pipeline to build firmware
@@ -65,18 +64,35 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 ```javascript
 function decodeUplink(input) {
     var bytes = input.bytes;
-    var temp1 = (bytes[0] & 0x80 ? 0xFFFF << 16 : 0) | bytes[0] << 8 | bytes[1];
-    var humi1 = bytes[2] << 8 | bytes[3];
-    var press1 = bytes[4] << 8 | bytes[5];
-    var temp2 = (bytes[6] & 0x80 ? 0xFFFF << 16 : 0) | bytes[6] << 8 | bytes[7];
-    var bat = bytes[8] << 8 | bytes[9];
-    var fwversion = "0.0";
-    if(bytes.length == 12) {
-      fwversion = bytes[10] + "." + bytes[11];
+    
+    var pin0 = (bytes[0] & 8) !== 0;
+    var pin1 = (bytes[0] & 4) !== 0;
+    var pin0last = (bytes[0] & 2) !== 0;
+    var pin1last = (bytes[0] & 1) !== 0;
+    var bat = bytes[1] << 8 | bytes[2];
+    var fwversion = (bytes[3] >> 4) + "." + (bytes[3] & 0xf);
+    var temp1 = (bytes[4] & 0x80 ? 0xFFFF << 16 : 0) | bytes[4] << 8 | bytes[5];
+    var humi1 = bytes[6] << 8 | bytes[7];
+    var press1 = bytes[8] << 8 | bytes[9];
+    var temp2 = (bytes[10] & 0x80 ? 0xFFFF << 16 : 0) | bytes[10] << 8 | bytes[11];
+    
+    var mbStatus = "UNKOWN";
+    if(pin0 || pin0last) {
+      mbStatus = "FULL";
+    } else if(pin1 || pin1last) {
+      mbStatus = "EMPTY";
     }
+    var interrupt = pin0 || pin1;
+
     return {
         data: {
+            pin0: pin0,
+            pin1: pin1,
+            pin0last: pin0last,
+            pin1last: pin1last,
+            interrupt:interrupt,
             fwversion: fwversion,
+            mbStatus: mbStatus,
             bme: {
                 temperature: temp1 / 100,
                 humidity: humi1 / 100,
@@ -84,7 +100,6 @@ function decodeUplink(input) {
             },
             ds18x: {
                 temperature: temp2 / 100
-
             },
             battery: bat / 100
         },

@@ -26,9 +26,9 @@
 // 1-Wire Bus
 #define ONEWIREBUS 6
 
-// Mailbox interrupts
-#define MAILBOX_INTERRUPT_LID 2
-#define MAILBOX_INTERRUPT_DOOR 3
+// External interrupt pins
+#define INTERRUPT_PIN0 2
+#define INTERRUPT_PIN1 3
 
 // Battery
 #define BAT_SENSE_PIN A0 // Analoge Input Pin
@@ -41,20 +41,6 @@
 
 // Start address in EEPROM for structure 'cfg'
 #define CFG_START 0
-
-// Mailbox LoRa message settings
-#define SEND_MSG_COUNT = 1;  // how often a mailbox status message should be sent
-#define RESEND_INTERVAL = 5; // if SEND_MSG_COUNT > 1, sleep time between transmissions
-
-// Mailbox uplink messages send as confirmend uplink messages
-#ifdef ENV_MAILBOX
-#define CONFIRMED_UPLINK 1
-#else
-#define CONFIRMED_UPLINK 0
-#endif
-
-// Timeout for sending messages
-#define LORA_TIMEOUT 30
 
 // ++++++++++++++++++++++++++++++++++++++++
 //
@@ -106,11 +92,14 @@ const lmic_pinmap lmic_pins = {
 
 typedef struct
 {
-  uint8_t CONFIG_IS_VALID;   // 1 byte
-  uint16_t SLEEPTIME;        // 2 byte - (Deep) Sleep time between data acquisition and transmission
-  float BAT_SENSE_VBP;       // 4 byte - Volts per Bit. See documentation
-  float BAT_MIN_VOLTAGE;     // 4 byte - Minimum voltage for operation, otherwise the node continues to sleep
-  uint8_t ACTIVATION_METHOD; // 1 byte - 1 = OTAA, 2 = ABP
+  uint8_t CONFIG_IS_VALID;          // 1 byte
+  uint16_t SLEEPTIME;               // 2 byte - (Deep) Sleep time between data acquisition and transmission
+  float BAT_SENSE_VBP;              // 4 byte - Volts per Bit. See documentation
+  float BAT_MIN_VOLTAGE;            // 4 byte - Minimum voltage for operation, otherwise the node continues to sleep
+  uint8_t WAKEUP_BY_INTERRUPT_PINS; // 1 byte - 0 = Disabled, 1 = Enabled
+  uint8_t CONFIRMED_DATA_UP;        // 1 byte - 0 = Unconfirmed Data Up, 1 = Confirmed Data Up
+  uint8_t ACTIVATION_METHOD;        // 1 byte - 1 = OTAA, 2 = ABP
+
   // ABP
   u1_t NWKSKEY[16]; // 16 byte - NwkSKey, network session key in big-endian format (aka msb).
   u1_t APPSKEY[16]; // 16 byte - AppSKey, application session key in big-endian format (aka msb).
@@ -184,7 +173,7 @@ float readBat()
 
   float batteryV = value * cfg.BAT_SENSE_VBP;
 
-#if defined(VERBOSE) || defined(CONFIG)
+#ifdef CONFIG
   Serial.print("Analoge voltage: ");
   Serial.print(((1.1 / 1024.0) * value), 2);
   Serial.print(" V | Analoge value: ");
@@ -314,6 +303,32 @@ void showConfig(bool raw = false)
   Serial.println(cfg.BAT_SENSE_VBP, DEC);
   Serial.print("> BAT_MIN_VOLTAGE: ");
   Serial.println(cfg.BAT_MIN_VOLTAGE, DEC);
+  Serial.print("> WAKEUP_BY_INTERRUPT_PINS: ");
+  switch (cfg.WAKEUP_BY_INTERRUPT_PINS)
+  {
+  case 0:
+    Serial.println("Disabled");
+    break;
+  case 1:
+    Serial.println("Enabled");
+    break;
+  default:
+    Serial.println("Unkown");
+    break;
+  }
+  Serial.print("> CONFIRMED_DATA_UP: ");
+  switch (cfg.CONFIRMED_DATA_UP)
+  {
+  case 0:
+    Serial.println("Unconfirmed Data Up");
+    break;
+  case 1:
+    Serial.println("Confirmed Data Up");
+    break;
+  default:
+    Serial.println("Unkown");
+    break;
+  }
   Serial.print("> ACTIVATION_METHOD: ");
   switch (cfg.ACTIVATION_METHOD)
   {
@@ -451,9 +466,7 @@ void do_send(osjob_t *j)
   // Check if there is not a current TX/RX job running
   if (LMIC.opmode & OP_TXRXPEND)
   {
-#ifdef VERBOSE
-    Serial.println(F("OP_TXRXPEND, not sending"));
-#endif
+    // Serial.println(F("OP_TXRXPEND, not sending"));
   }
   else
   {
@@ -462,46 +475,6 @@ void do_send(osjob_t *j)
 
     // Battery
     bat = readBat() * 100;
-#ifdef ENV_MAILBOX
-
-    byte buffer[4];
-    buffer[0] = pinState;
-    buffer[1] = bat >> 8;
-    buffer[2] = bat;
-    buffer[3] = (5 << 4) | (7 & 0xf);
-
-#ifdef DEBUG
-    Serial.println(F("Prepare package"));
-    Serial.print(F("> FW Version: "));
-    Serial.print(VERSION_MAJOR);
-    Serial.print(F("."));
-    Serial.println(VERSION_MINOR);
-    Serial.print(F("> Batt:       "));
-    Serial.println(bat);
-    Serial.print(F("> Pins:       "));
-    Serial.println(buffer[0], BIN);
-    // Serial.print(F("> Mailbox State: "));
-    // switch (mailboxState)
-    // {
-    // case UNKNOWN:
-    //   Serial.println("UNKNOWN");
-    //   break;
-
-    // case FULL:
-    //   Serial.println("FULL");
-    //   break;
-
-    // case EMPTY:
-    //   Serial.println("EMPTY");
-    //   break;
-    // }
-
-    Serial.print(F("> Payload:    "));
-    printHex(buffer, sizeof(buffer));
-    Serial.println();
-#endif
-
-#else
 
     // Signed 16 bits integer, -32767 up to +32767
     int16_t temp1 = -127;
@@ -524,47 +497,48 @@ void do_send(osjob_t *j)
     temp2 = ds.getTempC(dsSensor) * 100;
 
     byte buffer[12];
-    buffer[0] = temp1 >> 8;
-    buffer[1] = temp1;
-    buffer[2] = humi1 >> 8;
-    buffer[3] = humi1;
-    buffer[4] = press1 >> 8;
-    buffer[5] = press1;
-    buffer[6] = temp2 >> 8;
-    buffer[7] = temp2;
-    buffer[8] = bat >> 8;
-    buffer[9] = bat;
-    buffer[10] = VERSION_MAJOR;
-    buffer[11] = VERSION_MINOR;
+    buffer[0] = pinState;
+    buffer[1] = bat >> 8;
+    buffer[2] = bat;
+    buffer[3] = (VERSION_MAJOR << 4) | (VERSION_MINOR & 0xf);
+    buffer[4] = temp1 >> 8;
+    buffer[5] = temp1;
+    buffer[6] = humi1 >> 8;
+    buffer[7] = humi1;
+    buffer[8] = press1 >> 8;
+    buffer[9] = press1;
+    buffer[10] = temp2 >> 8;
+    buffer[11] = temp2;
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("Prepare package"));
-    Serial.print(F("> FW Version  "));
-    Serial.print(VERSION_MAJOR);
-    Serial.print(F("."));
-    Serial.println(VERSION_MINOR);
-    Serial.print(F("> BME Temp:   "));
-    Serial.println(temp1);
-    Serial.print(F("> BME Humi:   "));
-    Serial.println(humi1);
-    Serial.print(F("> BME Pres:   "));
-    Serial.println(press1);
-    Serial.print(F("> DS18x Temp: "));
-    Serial.println(temp2);
-    Serial.print(F("> Batt:       "));
-    Serial.println(bat);
+    //     Serial.print(F("> FW Version: "));
+    //     Serial.print(VERSION_MAJOR);
+    //     Serial.print(F("."));
+    //     Serial.println(VERSION_MINOR);
+    //     Serial.print(F("> Batt:       "));
+    //     Serial.println(bat);
+    //     Serial.print(F("> Pins:       "));
+    //     Serial.println(buffer[0], BIN);
+    //     Serial.print(F("> BME Temp:   "));
+    //     Serial.println(temp1);
+    //     Serial.print(F("> BME Humi:   "));
+    //     Serial.println(humi1);
+    //     Serial.print(F("> BME Pres:   "));
+    //     Serial.println(press1);
+    //     Serial.print(F("> DS18x Temp: "));
+    //     Serial.println(temp2);
     Serial.print(F("> Payload:    "));
     printHex(buffer, sizeof(buffer));
     Serial.println();
-#endif
 #endif
 
     // Print first debug messages in loop immediately
     lastPrintTime = 0;
 
     // Prepare upstream data transmission at the next possible time.
-    LMIC_setTxData2(1, buffer, sizeof(buffer), CONFIRMED_UPLINK);
-#ifdef DEBUG
+    LMIC_setTxData2(1, buffer, sizeof(buffer), cfg.CONFIRMED_DATA_UP);
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa packet queued"));
 #endif
   }
@@ -664,17 +638,18 @@ void do_sleep(uint16_t sleepTime)
   uint16_t sleepTimeLeft = sleepTime;
   boolean breaksleep = false;
 
-#ifdef ENV_MAILBOX
   // Allow wake up pin to trigger interrupt on low.
   // https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
-  attachInterrupt(digitalPinToInterrupt(2), wakeUp0, RISING);
-  attachInterrupt(digitalPinToInterrupt(3), wakeUp1, RISING);
+  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
+  {
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0), wakeUp0, RISING);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1), wakeUp1, RISING);
+  }
 
   wakedFromISR0 = false;
   wakedFromISR1 = false;
-#endif
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   Serial.print(F("Sleep "));
   if (sleepTime <= 0)
   {
@@ -724,27 +699,28 @@ void do_sleep(uint16_t sleepTime)
     }
   }
 
-#ifdef ENV_MAILBOX
   // Disable external pin interrupt on wake up pin.
-  detachInterrupt(digitalPinToInterrupt(2));
-  detachInterrupt(digitalPinToInterrupt(3));
-#endif
+  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
+  {
+    detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0));
+    detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1));
+  }
 }
 
 void onEvent(ev_t ev)
 {
   switch (ev)
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   case EV_JOINING:
     Serial.println(F("LoRa joining..."));
     break;
 #endif
   case EV_JOINED:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa joined!"));
 #endif
-    // #ifndef ABP
+
     if (cfg.ACTIVATION_METHOD == OTAA)
     {
       {
@@ -753,6 +729,7 @@ void onEvent(ev_t ev)
         u1_t nwkKey[16];
         u1_t artKey[16];
         LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
+#ifdef DEBUG_PRINT
         Serial.print(F("> NetID: "));
         Serial.println(netid, DEC);
         Serial.print(F("> DevAddr (MSB): "));
@@ -763,6 +740,7 @@ void onEvent(ev_t ev)
         Serial.print(F("> NwkSKey (MSB): "));
         printHex(nwkKey, sizeof(nwkKey));
         Serial.println();
+#endif
       }
 
       // Disable link check validation (automatically enabled
@@ -771,59 +749,58 @@ void onEvent(ev_t ev)
 
       // Ok send our first data in 10 ms
       os_setTimedCallback(&sendjob, os_getTime() + ms2osticks(10), do_send);
-      // #endif
     }
     break;
   case EV_JOIN_FAILED:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa join failed"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_REJOIN_FAILED:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("EV_REJOIN_FAILED"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
 
   case EV_TXSTART:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     // Serial.println(F("EV_TXSTART"));
 #endif
     break;
   case EV_TXCOMPLETE:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
     if (LMIC.txrxFlags & TXRX_ACK)
       Serial.println(F("> Received ack"));
     if (LMIC.txrxFlags & TXRX_NACK)
       Serial.println(F("> Received NO ack"));
 #endif
-#ifdef VERBOSE
-    if (LMIC.dataLen)
-    {
 
-      Serial.print(F("> Received "));
-      Serial.print(LMIC.dataLen);
-      Serial.print(F(" bytes of payload: "));
-      for (int i = 0; i < LMIC.dataLen; i++)
-      {
-        if (LMIC.frame[LMIC.dataBeg + i] < 0x10)
-        {
-          Serial.print(F("0"));
-        }
-        Serial.print(LMIC.frame[LMIC.dataBeg + i], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-    }
-#endif
+    // if (LMIC.dataLen)
+    // {
+
+    //   Serial.print(F("> Received "));
+    //   Serial.print(LMIC.dataLen);
+    //   Serial.print(F(" bytes of payload: "));
+    //   for (int i = 0; i < LMIC.dataLen; i++)
+    //   {
+    //     if (LMIC.frame[LMIC.dataBeg + i] < 0x10)
+    //     {
+    //       Serial.print(F("0"));
+    //     }
+    //     Serial.print(LMIC.frame[LMIC.dataBeg + i], HEX);
+    //     Serial.print(" ");
+    //   }
+    //   Serial.println();
+    // }
+
     TXCompleted = true;
     break;
 
   case EV_JOIN_TXCOMPLETE:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa NO JoinAccept"));
 #endif
     break;
@@ -840,7 +817,7 @@ void onEvent(ev_t ev)
   case EV_TXCANCELED:
   case EV_RXSTART:
   default:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.print(F("Unknown event: "));
     Serial.println((unsigned)ev);
 #endif
@@ -848,32 +825,28 @@ void onEvent(ev_t ev)
   }
 }
 
-void updateMailbox()
+void updatePins()
 {
   byte lastState = pinState;
 
   if (wakedFromISR0 || wakedFromISR1)
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.print(F("Wakeup from interrupt "));
 #endif
     if (wakedFromISR0)
     {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
       Serial.println(F("0!"));
 #endif
-      mailboxState = FULL;
-      pinState0 = 1;
       pinState |= STATE_PIN0; // set bit in pinState byte to 1
     }
 
     if (wakedFromISR1)
     {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
       Serial.println(F("1!"));
 #endif
-      mailboxState = EMPTY;
-      pinState1 = 1;
       pinState |= STATE_PIN1; // set bit in pinState byte to 1
     }
 
@@ -914,7 +887,7 @@ void setup()
   analogReference(INTERNAL);
 
   //pinMode(LED_BUILTIN, OUTPUT);
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   while (!Serial)
     ; // wait for Serial to be initialized
   Serial.begin(9600);
@@ -935,7 +908,7 @@ void setup()
 #else
   if (!cfg.CONFIG_IS_VALID)
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("INVALID CONFIG!"));
 #endif
     while (true)
@@ -944,22 +917,21 @@ void setup()
   }
 #endif
 
-#ifdef ENV_CLIMATE
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   Serial.print("Search DS18x...");
 #endif
 
   ds.begin();
   ds.requestTemperatures();
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   Serial.print(ds.getDeviceCount(), DEC);
   Serial.println(" found");
 #endif
 
   for (uint8_t i = 0; i < ds.getDeviceCount(); i++)
   {
-#ifdef DEBUG
+#ifdef CONFIG
     Serial.print(F("> #"));
     Serial.print(i);
     Serial.print(F(": "));
@@ -973,13 +945,8 @@ void setup()
         memcpy(dsSensor, deviceAddress, sizeof(deviceAddress) / sizeof(*deviceAddress));
       }
 
-#ifdef DEBUG
+#ifdef CONFIG
       printHex(deviceAddress, sizeof(deviceAddress));
-#endif
-
-#ifdef VERBOSE
-      printHex(deviceAddress, sizeof(deviceAddress));
-
       Serial.print(" --> ");
       uint8_t scratchPad[9];
       ds.readScratchPad(deviceAddress, scratchPad);
@@ -987,28 +954,39 @@ void setup()
       Serial.print(" --> ");
       Serial.print(ds.getTempC(deviceAddress));
       Serial.print(" °C");
-#endif
       Serial.println();
+#endif
     }
   }
 
   // BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   Serial.print(F("Search BME280..."));
 #endif
   if (bme.begin(I2C_ADR_BME))
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("1 found"));
+#endif
+#ifdef CONFIG
+    bme.takeForcedMeasurement();
+    Serial.print(F("> Temperatur: "));
+    Serial.print(bme.readTemperature());
+    Serial.println(" °C");
+    Serial.print(F("> Humidity: "));
+    Serial.print(bme.readHumidity());
+    Serial.println(" %RH");
+    Serial.print(F("> Pressure: "));
+    Serial.print(bme.readPressure() / 100.0F);
+    Serial.println(" hPa");
 #endif
   }
   else
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("not found"));
 #endif
   }
-#endif
 
 #ifndef CONFIG
   // LMIC init
@@ -1059,12 +1037,6 @@ void loop()
   if (!os_queryTimeCriticalJobs(ms2osticksRound(8 * 1000)) && TXCompleted && !(LMIC.opmode & OP_TXRXPEND))
   {
     TXCompleted = false;
-#ifdef DEBUG
-    // if (LMIC.txrxFlags & TXRX_NACK)
-    // {
-    //   Serial.println(F("No ack recived :-(\n"));
-    // }
-#endif
 
     // Going to sleep
     boolean sleep = true;
@@ -1077,32 +1049,27 @@ void loop()
       }
       else
       {
-#ifdef DEBUG
-        Serial.println(F("Battery voltage to low!"));
+#ifdef DEBUG_PRINT
+        Serial.println(F("Batt V to low!"));
 #endif
       }
     }
 
-#ifdef ENV_MAILBOX
-    updateMailbox();
-#endif
+    updatePins();
 
     // sleep ended. do next transmission
     do_send(&sendjob);
   }
   else if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
   {
-#ifdef DEBUG
-    Serial.print(F("Cannot sleep. txCnt: "));
+#ifdef DEBUG_PRINT
+    Serial.print(F("Cannot sleep. txCnt="));
     Serial.print(LMIC.txCnt);
-    // Serial.print(F(". Jobs: "));
-    // Serial.print(timeCriticalJobs);
-    Serial.print("...\n");
+    Serial.println();
 #endif
     lastPrintTime = millis();
   }
-#ifdef ENV_MAILBOX
-  updateMailbox();
-#endif
+
+  updatePins();
 #endif
 }
