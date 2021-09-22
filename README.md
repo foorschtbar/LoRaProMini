@@ -40,9 +40,12 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 ## ToDo
 
-- [ ] Switch between Sensor-Node or Mailbox-Node Version?
-- [ ] Add Interrupts to LoRa message
-- [ ] Add wake from deep sleep by interrupt
+- [ ] Timeout to go to sleep after
+- [ ] Combine Sensor and Mailbox Firmware OR Switch between Sensor-Node or Mailbox-Node Version?
+- [ ] Major + Minor Byte to single byte 4bits for major and 4 bits for minor
+- [ ] External Interrupt Pins Byte (Pin 1 current state, Pin 2 current state, Pin 1 last state, Pin 2 last state)
+- [ ] Ad option for Confirmed Uplink to config?
+- [ ] Timeout for Wire (I2C) Libary
 - [ ] Go to sleep immediately when voltage is too low
 - [x] Add CI/CD pipeline to build firmware
 - [x] Rewirte VBP calculator in Configuration Builder
