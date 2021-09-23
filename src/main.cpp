@@ -67,12 +67,11 @@ enum _activationMethode
   ABP = 2
 };
 
-enum loraStateByte
+enum _StateByte
 {
-  STATE_PIN0 = 0b1000,
-  STATE_PIN1 = 0b0100,
-  STATE_PIN0_LAST = 0b0010,
-  STATE_PIN1_LAST = 0b0001,
+  STATE_ITR_TRIGGER = 0b0001,
+  STATE_ITR0 = 0b0010,
+  STATE_ITR1 = 0b0100,
 };
 
 // ++++++++++++++++++++++++++++++++++++++++
@@ -839,7 +838,8 @@ void updatePins()
 #ifdef DEBUG_PRINT
       Serial.println(F("0!"));
 #endif
-      pinState |= STATE_PIN0; // set bit in pinState byte to 1
+      pinState |= STATE_ITR0;    // set bit in pinState byte to 1
+      pinState &= ~(STATE_ITR1); // set bit in pinState byte to 0
     }
 
     if (wakedFromISR1)
@@ -847,37 +847,22 @@ void updatePins()
 #ifdef DEBUG_PRINT
       Serial.println(F("1!"));
 #endif
-      pinState |= STATE_PIN1; // set bit in pinState byte to 1
+      pinState |= STATE_ITR1;    // set bit in pinState byte to 1
+      pinState &= ~(STATE_ITR0); // set bit in pinState byte to 0
     }
+
+    // set STATE_ITR_EVT bit in pinState byte to 1
+    // this means this pin was set now
+    pinState |= STATE_ITR_TRIGGER;
 
     wakedFromISR0 = false;
     wakedFromISR1 = false;
   }
   else
   {
-    pinState &= ~(STATE_PIN0); // set bit in pinState byte to 0
-    pinState &= ~(STATE_PIN1); // set bit in pinState byte to 0
-  }
-
-  if ((lastState & STATE_PIN0) != (pinState & STATE_PIN0) || (lastState & STATE_PIN1) != (pinState & STATE_PIN1)) // pin changed. change last_pin bit
-  {
-    if ((lastState & STATE_PIN0) != 0) // bit was 1 then set last_pin bit also to 1
-    {
-      pinState |= STATE_PIN0_LAST; // set bit in pinState byte to 1
-    }
-    else
-    {
-      pinState &= ~(STATE_PIN0_LAST); // set bit in pinState byte to 0
-    }
-
-    if ((lastState & STATE_PIN1) != 0)
-    {
-      pinState |= STATE_PIN1_LAST; // set bit in pinState byte to 1
-    }
-    else
-    {
-      pinState &= ~(STATE_PIN1_LAST); // set bit in pinState byte to 0
-    }
+    // set STATE_ITR_EVT bit in pinState byte to 0
+    // this means that the pin states was set previously
+    pinState &= ~(STATE_ITR_TRIGGER);
   }
 }
 
@@ -1034,7 +1019,7 @@ void loop()
   os_runloop_once();
 
   // Previous TX is complete and also no critical jobs pending in LMIC
-  if (!os_queryTimeCriticalJobs(ms2osticksRound(8 * 1000)) && TXCompleted && !(LMIC.opmode & OP_TXRXPEND))
+  if (TXCompleted)
   {
     TXCompleted = false;
 
