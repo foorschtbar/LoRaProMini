@@ -17,7 +17,7 @@ A LoRaWAN sensor node for The Things Network, based on an ATMEGA328P (Arduino Pr
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
 
 The module can be used:
-- Collect various climate values with environmental sensors. See [Environmental (Weather/Clima) Sensor](#environmental-(weather/clima)-sensor).
+- Collect various climate values with environmental sensors. See [Environmental (Weather/Clima) Sensor](#environmental-weatherclima-sensor).
 - Tell if the letter carrier has put new letters in your mailbox. See [Mailbox Monitor](#mailbox-monitor).
 - Notify if someone rang the doorbell. See [Doorbell Monitor](#doorbell-monitor).
 - Act a wirless button
