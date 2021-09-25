@@ -17,7 +17,7 @@ The module can be used to:
 - Deep sleep processor and sensors between data transmissions
 - Two interrupt inputs could use to wake up the processor from deep sleep
 - Confirmend und unconfirmend data up messages
-- Extremely low power consumption
+- Ultra low power consumption. Under 10μA with all features and sensors.
 - Power input
     - Battery (Li-Ion with 3.7 works fine)
     - Battery with solar charger
@@ -27,16 +27,18 @@ The module can be used to:
     -  Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire sensor to measure temperature 
 
 ## Example Applications (TBD)
+- Environmental (Weather/Clima) Sensor
 - Mailbox Monitor
 - Doorbell Monitor
-- Weather Monitor
 
-## PCB
+## More pics
 
 <!--- ![PCB Front](.github/pcb_front.png) --->
 ![PCB Back](.github/pcb_back.png)
 <!--- ![PCB Back](.github/pcb_back.png) --->
 ![PCB KiCad](.github/pcb_kicad.png)
+![Outdoor Clima Sensor](.github/outdoor_environmental_sensor.jpg)
+
 
 ## The Things Stack configuration
 
@@ -66,25 +68,43 @@ Example:
 avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1.0_config.hex:i
 ```
 
-## ToDo
+## Firmware Changelog
 
-- [ ] Go to sleep immediately when voltage is too low
-- [x] Add wake up trough interrupt pins
-- [x] Move Major- and Minorversion byte to single byte. 4 bits for major and 4 bits for minor.
-- [x] Add option for Confirmed Uplink to config
-- [x] Add CI/CD pipeline to build firmware
-- [x] Rewirte VBP calculator in Configuration Builder
-- [x] Move config to EEPROM
-- [x] Added special firmware to change configs
-- [x] Build HTML/JS Interface to build configs
-- [x] Add CRC32 check
-- [x] Test ABP
-- [x] Test OTAA
-- [x] Deploy config tool via GitHub Pages
-- [x] Fix problem when checksum in pastend config had zeros O.o
-- [x] Add random EUI generator button to config tool
-- [x] Parse config string to GUI fields
+### Version 2.0
+- Added wake up trough interrupt pins
+- Added option for disable interrupt pins
+- Added option for confirmed uplink
+- Changed LoRaWAN data up message
+    - Added state of interrupt pins
+    - Combined major and minor version byte into a single byte (4 bits for major and 4 bits for minor)
 
+### Version 1.1
+- Only for testing CI Pipeline
+
+### Version 1.0
+- Initial Version
+
+## PCB Changelog
+
+### Version 3.0
+- Removed Arduino Pro Mini Dauther PCB
+- Added ATMEGA328P direct to the PCB
+- Added pins for unused GPIOs
+- Added D2 and D3 with Pulldowns and connector as external interrupts (need FW v2.0 or higher)
+
+### Version 2.2
+- Added RST pin to connector for programming
+
+### Version 2.1
+- Added connector for programming
+
+### Version 2.0
+- Smaller PCB
+- Rounded Edges
+- Fixed issue with DS18x onboard pin mapping
+
+### Version 1.0
+- Initial PCB
  
 ## TTN Payload decoder
 ```javascript
@@ -135,3 +155,22 @@ function decodeUplink(input) {
     }
 }
 ```
+
+## ToDo
+
+- [ ] Go to sleep immediately when voltage is too low
+- [x] Add wake up trough interrupt pins
+- [x] Move Major- and Minorversion byte to single byte. 4 bits for major and 4 bits for minor.
+- [x] Add option for Confirmed Uplink to config
+- [x] Add CI/CD pipeline to build firmware
+- [x] Rewirte VBP calculator in Configuration Builder
+- [x] Move config to EEPROM
+- [x] Added special firmware to change configs
+- [x] Build HTML/JS Interface to build configs
+- [x] Add CRC32 check
+- [x] Test ABP
+- [x] Test OTAA
+- [x] Deploy config tool via GitHub Pages
+- [x] Fix problem when checksum in pastend config had zeros O.o
+- [x] Add random EUI generator button to config tool
+- [x] Parse config string to GUI fields
