@@ -2,24 +2,54 @@
 
 :warning: This project is a WIP!
 
-A LoRaWAN sensor node for The Things Network, based on an Arduino Pro Mini and RFM95W/SX1276 LoRa module. Uses a Bosch BME280 (humidity, barometric pressure and ambient temperature) sensor to measure inside the enclosure and a Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire sensor to measure temperature outside the enclosure. The PCB is installed in a solar lamp and supplied with power from it. Between the data transmissions, the Arduino, LoRa module and all sensors go into deep sleep mode to save power.
+A LoRaWAN sensor node for The Things Network, based on an ATMEGA328P (Arduino Pro Mini) and RFM95W/SX1276 LoRa transiver module. 
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
+
+The module can be used to:
+- Collect various climate values with the climate sensors
+- It can tell if the letter carrier has put letters in the mailbox (with two reed switches)
+- It can be used as a wirless button
+- It can notify if someone rang the doorbell
+- ...
+
+## Features
+- Deep sleep processor and sensors between data transmissions
+- Two interrupt inputs could use to wake up the processor from deep sleep
+- Confirmend und unconfirmend data up messages
+- Ultra low power consumption. Under 10μA with all features and sensors.
+- Power input
+    - Battery (Li-Ion with 3.7 works fine)
+    - Battery with solar charger
+    - Up to 6V
+- Sensor support
+    - Bosch BME280 (humidity, barometric pressure and ambient temperature)
+    -  Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire sensor to measure temperature 
+
+## Example Applications (TBD)
+- Environmental (Weather/Clima) Sensor
+- Mailbox Monitor
+- Doorbell Monitor
+
+## More pics
+
 <!--- ![PCB Front](.github/pcb_front.png) --->
-![PCB Back Assembled](.github/pcb_back_assembled.png)
+![PCB Back](.github/pcb_back.png)
 <!--- ![PCB Back](.github/pcb_back.png) --->
 ![PCB KiCad](.github/pcb_kicad.png)
+![Outdoor Clima Sensor](.github/outdoor_environmental_sensor.jpg)
+
 
 ## The Things Stack configuration
 
 - LoRaWAN version `MAC V1.0.3`
-- ...
+- TBD
 
 ## How to use
 
 1. Flash config firmware (See [How to flash](#how-to-flash))
 1. Start voltage calibration from menu
-1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 5V
+1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 6V
 1. Use volts-per-bit calculator to get VBP factor for config
 1. Create configuration with [Configuration Builder](https://foorschtbar.github.io/LoRaProMini/)
 1. Write configuration to EEPROM using configuration menu
@@ -38,10 +68,101 @@ Example:
 avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1.0_config.hex:i
 ```
 
+## Firmware Changelog
+
+### Version 2.0
+- Added wake up trough interrupt pins
+- Added option for disable interrupt pins
+- Added option for confirmed uplink
+- Changed LoRaWAN data up message
+    - Added state of interrupt pins
+    - Combined major and minor version byte into a single byte (4 bits for major and 4 bits for minor)
+
+### Version 1.1
+- Only for testing CI Pipeline
+
+### Version 1.0
+- Initial Version
+
+## PCB Changelog
+
+### Version 3.0
+- Removed Arduino Pro Mini Dauther PCB
+- Added ATMEGA328P direct to the PCB
+- Added pins for unused GPIOs
+- Added D2 and D3 with Pulldowns and connector as external interrupts (need FW v2.0 or higher)
+
+### Version 2.2
+- Added RST pin to connector for programming
+
+### Version 2.1
+- Added connector for programming
+
+### Version 2.0
+- Smaller PCB
+- Rounded Edges
+- Fixed issue with DS18x onboard pin mapping
+
+### Version 1.0
+- Initial PCB
+ 
+## TTN Payload decoder
+```javascript
+function decodeUplink(input) {
+    var bytes = input.bytes;
+    
+    var itrTrigger = (bytes[0] & 1) !== 0; // Message was triggerd from interrupt
+    var itr0 = (bytes[0] & 2) !== 0; // Interrupt 0
+    var itr1 = (bytes[0] & 4) !== 0; // Interrupt 1
+    var bat = bytes[1] << 8 | bytes[2]; // Battery
+    var fwversion = (bytes[3] >> 4) + "." + (bytes[3] & 0xf); // Firmware version
+    var temp1 = (bytes[4] & 0x80 ? 0xFFFF << 16 : 0) | bytes[4] << 8 | bytes[5]; // BME Temperature
+    var humi1 = bytes[6] << 8 | bytes[7]; // BME Humidity
+    var press1 = bytes[8] << 8 | bytes[9]; // BME Pressure
+    var temp2 = (bytes[10] & 0x80 ? 0xFFFF << 16 : 0) | bytes[10] << 8 | bytes[11]; // DS18x Temperature
+    
+    var mbStatus = "UNKOWN";
+    if (itr0) {
+      mbStatus = "FULL";
+    } else if (itr1) {
+      mbStatus = "EMPTY";
+    }
+
+    return {
+        data: {
+            interrupts: {
+                itr0: itr0,
+                itr1: itr1,
+                itrTrigger: itrTrigger
+            },
+            extra: {
+                mbStatus: mbStatus,
+                mbChanged: itrTrigger
+            },
+            fwversion: fwversion,
+            bme: {
+                temperature: temp1 / 100,
+                humidity: humi1 / 100,
+                pressure: press1
+            },
+            ds18x: {
+                temperature: temp2 / 100
+            },
+            battery: bat / 100
+        },
+        warnings: [],
+        errors: []
+    }
+}
+```
+
 ## ToDo
 
-- [x] Add CI/CD pipeline to build firmware
 - [ ] Go to sleep immediately when voltage is too low
+- [x] Add wake up trough interrupt pins
+- [x] Move Major- and Minorversion byte to single byte. 4 bits for major and 4 bits for minor.
+- [x] Add option for Confirmed Uplink to config
+- [x] Add CI/CD pipeline to build firmware
 - [x] Rewirte VBP calculator in Configuration Builder
 - [x] Move config to EEPROM
 - [x] Added special firmware to change configs
@@ -53,37 +174,3 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 - [x] Fix problem when checksum in pastend config had zeros O.o
 - [x] Add random EUI generator button to config tool
 - [x] Parse config string to GUI fields
-
- 
-## TTN Payload decoder
-```javascript
-function decodeUplink(input) {
-    var bytes = input.bytes;
-    var temp1 = (bytes[0] & 0x80 ? 0xFFFF << 16 : 0) | bytes[0] << 8 | bytes[1];
-    var humi1 = bytes[2] << 8 | bytes[3];
-    var press1 = bytes[4] << 8 | bytes[5];
-    var temp2 = (bytes[6] & 0x80 ? 0xFFFF << 16 : 0) | bytes[6] << 8 | bytes[7];
-    var bat = bytes[8] << 8 | bytes[9];
-    var fwversion = "0.0";
-    if(bytes.length == 12) {
-      fwversion = bytes[10] + "." + bytes[11];
-    }
-    return {
-        data: {
-            fwversion: fwversion,
-            bme: {
-                temperature: temp1 / 100,
-                humidity: humi1 / 100,
-                pressure: press1
-            },
-            ds18x: {
-                temperature: temp2 / 100
-
-            },
-            battery: bat / 100
-        },
-        warnings: [],
-        errors: []
-    }
-}
-```

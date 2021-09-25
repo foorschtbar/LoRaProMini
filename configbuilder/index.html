@@ -38,7 +38,7 @@
                 <input type="hidden" value="1" id="CONFIG_IS_VALID">
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="SLEEPTIME">
-                    <label for="SLEEPTIME">Data transmission interval in seconds (2 byte)</label>
+                    <label for="SLEEPTIME">Sleep time between transmissions in seconds (2 byte)</label>
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating input-group has-validation mb-3">
@@ -65,6 +65,25 @@
                     <input type="text" class="form-control" id="BAT_MIN_VOLTAGE">
                     <label for="BAT_MIN_VOLTAGE">Minimum voltage for operation, otherwise the node continues sleeping (4
                         bytes)</label>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-floating mb-3">
+                    <select class="form-select" id="WAKEUP_BY_INTERRUPT_PINS">
+                        <option hidden disabled selected value>Choose...</option>
+                        <option value="0">Disabled</option>
+                        <option value="1">Enabled</option>
+                    </select>
+                    <label for="WAKEUP_BY_INTERRUPT_PINS">Wakeup from sleep through external interrupt pins (1
+                        byte)</label>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-floating mb-3">
+                    <select class="form-select" id="CONFIRMED_DATA_UP">
+                        <option hidden disabled selected value>Choose...</option>
+                        <option value="0">Unconfirmed Data Up</option>
+                        <option value="1">Confirmed Data Up</option>
+                    </select>
+                    <label for="CONFIRMED_DATA_UP">Confirmation for Data Up (1 byte)</label>
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating mb-3">
@@ -196,6 +215,8 @@
         "SLEEPTIME": ["int", "2", true, 0],
         "BAT_SENSE_VBP": ["float", "4", true, 0],
         "BAT_MIN_VOLTAGE": ["float", "4", true, 0],
+        "WAKEUP_BY_INTERRUPT_PINS": ["int", "1", true, 0],
+        "CONFIRMED_DATA_UP": ["int", "1", true, 0],
         "ACTIVATION_METHOD": ["int", "1", true, 0],
         "NWKSKEY": ["str", "16", false, 2],
         "APPSKEY": ["str", "16", false, 2],

@@ -21,7 +21,7 @@ jobs:
           pip install platformio
 
       - name: Run PlatformIO build on selected platforms 🏗️
-        run: platformio run -e release -e debug -e config
+        run: platformio run -e config -e release -e debug
 
       - name: Upload binaries to release 🚀
         uses: svenstaro/upload-release-action@v2

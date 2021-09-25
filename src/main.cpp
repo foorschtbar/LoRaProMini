@@ -19,18 +19,19 @@
 // LoRa module pins
 #define LORA_DIO0 8
 #define LORA_DIO1 7
-#define LORA_DIO2 2
+#define LORA_DIO2 LMIC_UNUSED_PIN
 #define LORA_RESET 9
 #define LORA_CS SS
 
 // 1-Wire Bus
 #define ONEWIREBUS 6
 
+// External interrupt pins
+#define INTERRUPT_PIN0 2
+#define INTERRUPT_PIN1 3
+
 // Battery
 #define BAT_SENSE_PIN A0 // Analoge Input Pin
-
-#define OTAA 1
-#define ABP 2
 
 // BME I2C Adresses
 #define I2C_ADR_BME 0x76
@@ -40,6 +41,10 @@
 
 // Start address in EEPROM for structure 'cfg'
 #define CFG_START 0
+
+// Config size
+#define CFG_SIZE 82
+#define CFG_SIZE_WITH_CHECKSUM 86
 
 // ++++++++++++++++++++++++++++++++++++++++
 //
@@ -53,6 +58,25 @@ TinyBME bme;
 
 // Dallas temp sensor(s)
 DeviceAddress dsSensor; // Holds later first sensor found at boot.
+
+// ++++++++++++++++++++++++++++++++++++++++
+//
+// ENUMS
+//
+// ++++++++++++++++++++++++++++++++++++++++
+
+enum _activationMethode
+{
+  OTAA = 1,
+  ABP = 2
+};
+
+enum _StateByte
+{
+  STATE_ITR_TRIGGER = 0b0001,
+  STATE_ITR0 = 0b0010,
+  STATE_ITR1 = 0b0100,
+};
 
 // ++++++++++++++++++++++++++++++++++++++++
 //
@@ -71,11 +95,14 @@ const lmic_pinmap lmic_pins = {
 
 typedef struct
 {
-  uint8_t CONFIG_IS_VALID;   // 1 byte
-  uint16_t SLEEPTIME;        // 2 byte - (Deep) Sleep time between data acquisition and transmission
-  float BAT_SENSE_VBP;       // 4 byte - Volts per Bit. See documentation
-  float BAT_MIN_VOLTAGE;     // 4 byte - Minimum voltage for operation, otherwise the node continues to sleep
-  uint8_t ACTIVATION_METHOD; // 1 byte - 1 = OTAA, 2 = ABP
+  uint8_t CONFIG_IS_VALID;          // 1 byte
+  uint16_t SLEEPTIME;               // 2 byte - (Deep) Sleep time between data acquisition and transmission
+  float BAT_SENSE_VBP;              // 4 byte - Volts per Bit. See documentation
+  float BAT_MIN_VOLTAGE;            // 4 byte - Minimum voltage for operation, otherwise the node continues to sleep
+  uint8_t WAKEUP_BY_INTERRUPT_PINS; // 1 byte - 0 = Disabled, 1 = Enabled
+  uint8_t CONFIRMED_DATA_UP;        // 1 byte - 0 = Unconfirmed Data Up, 1 = Confirmed Data Up
+  uint8_t ACTIVATION_METHOD;        // 1 byte - 1 = OTAA, 2 = ABP
+
   // ABP
   u1_t NWKSKEY[16]; // 16 byte - NwkSKey, network session key in big-endian format (aka msb).
   u1_t APPSKEY[16]; // 16 byte - AppSKey, application session key in big-endian format (aka msb).
@@ -87,6 +114,13 @@ typedef struct
 
 } configData_t;
 configData_t cfg; // Instance 'cfg' is a global variable with 'configData_t' structure now
+
+volatile boolean wakedFromISR0 = false;
+volatile boolean wakedFromISR1 = false;
+unsigned long lastPrintTime = 0;
+unsigned long prepareCount = 0;
+boolean TXCompleted = false;
+byte pinState = 0x0;
 
 // These callbacks are used in over-the-air activation
 void os_getArtEui(u1_t *buf)
@@ -116,6 +150,16 @@ void clearSerialBuffer()
   }
 }
 
+void wakeUp0()
+{
+  wakedFromISR0 = true;
+}
+
+void wakeUp1()
+{
+  wakedFromISR1 = true;
+}
+
 float readBat()
 {
   uint16_t value = 0;
@@ -133,20 +177,20 @@ float readBat()
 
   float batteryV = value * cfg.BAT_SENSE_VBP;
 
-#if defined(VERBOSE) || defined(CONFIG)
-  Serial.print("Analoge voltage: ");
+#ifdef CONFIG
+  Serial.print(F("Analoge voltage: "));
   Serial.print(((1.1 / 1024.0) * value), 2);
-  Serial.print(" V | Analoge value: ");
+  Serial.print(F(" V | Analoge value: "));
   Serial.print(value);
-  Serial.print(" (");
+  Serial.print(F(" ("));
   Serial.print(((100.0 / 1023.0) * value), 1);
-  Serial.print("% of Range) | Battery voltage: ");
+  Serial.print(F("% of Range) | Battery voltage: "));
   Serial.print(batteryV, 1);
-  Serial.print(" V (");
+  Serial.print(F(" V ("));
   Serial.print(batteryV, 2);
-  Serial.print(" V, VBP=");
+  Serial.print(F(" V, VBP="));
   Serial.print(cfg.BAT_SENSE_VBP, 10);
-  Serial.println(")");
+  Serial.println(F(")"));
 #endif
 
   return batteryV;
@@ -176,13 +220,13 @@ void readConfig()
 
 void setConfig()
 {
-  byte newcfg[sizeof(cfg) + 4];
+  byte cfgbuffer[CFG_SIZE_WITH_CHECKSUM];
   char buffer[3];
   char *pEnd;
   uint32_t crc_data = 0;
   CRC32 crc;
 
-  for (uint8_t i = 0; i < sizeof(newcfg); i++)
+  for (uint8_t i = 0; i < CFG_SIZE_WITH_CHECKSUM; i++)
   {
     if (!Serial.readBytes(buffer, 2))
     {
@@ -193,9 +237,10 @@ void setConfig()
     buffer[3] = '\0';
 
     // convert null-terminated char buffer with hex values to int
-    newcfg[i] = (byte)strtol(buffer, &pEnd, 16);
+    cfgbuffer[i] = (byte)strtol(buffer, &pEnd, 16);
 
-    if (i < sizeof(cfg))
+    // Add bytes to crc calculation
+    if (i < CFG_SIZE)
     {
       // Add hex chars from buffer without null-terminator
       crc.update(buffer, 2);
@@ -205,96 +250,122 @@ void setConfig()
       // Store checksum from serial input
       // later compare
       crc_data <<= 8;
-      crc_data |= newcfg[i];
+      crc_data |= cfgbuffer[i];
     }
 
     // Pad to 8 bit
     // Add zero prefix to serial output
-    newcfg[i] &= 0xff;
-    if (newcfg[i] < 16)
+    cfgbuffer[i] &= 0xff;
+    if (cfgbuffer[i] < 16)
       Serial.write(48); // 0
 
-    Serial.print(newcfg[i], HEX);
+    Serial.print(cfgbuffer[i], HEX);
     Serial.print(" ");
   }
 
   Serial.println();
 
-  Serial.print("> CHECKSUM (Serial Input): 0x");
+  Serial.print(F("> CHECKSUM (Serial Input): 0x"));
   Serial.print(crc_data, HEX);
   Serial.println();
 
   uint32_t crc_calculated = crc.finalize();
-  Serial.print("> CHECKSUM (Calculated):   0x");
+  Serial.print(F("> CHECKSUM (Calculated):   0x"));
   Serial.println(crc_calculated, HEX);
 
   if (crc_data == crc_calculated)
   {
 
-    Serial.println("> Checksum correct. Configuration saved!");
+    Serial.println(F("> Checksum correct. Configuration saved!"));
 
-    for (uint8_t i = CFG_START; i < sizeof(cfg); i++)
+    for (uint8_t i = CFG_START; i < CFG_SIZE; i++)
     {
-      EEPROM.write(i, (uint8_t)newcfg[i]);
+      EEPROM.write(i, (uint8_t)cfgbuffer[i]);
     }
 
     readConfig();
   }
   else
   {
-    Serial.println("> INVALID CHECKSUM! Process aborted! ");
+    Serial.println(F("> INVALID CHECKSUM! Process aborted! "));
   }
 }
 
 void showConfig(bool raw = false)
 {
-  Serial.print("> CONFIG_IS_VALID: ");
+  Serial.print(F("> CONFIG_IS_VALID: "));
   if (cfg.CONFIG_IS_VALID == 1)
   {
-    Serial.println("yes");
+    Serial.println(F("yes"));
   }
   else
   {
-    Serial.println("no");
+    Serial.println(F("no"));
   }
-  Serial.print("> SLEEPTIME: ");
+  Serial.print(F("> SLEEPTIME: "));
   Serial.println(cfg.SLEEPTIME, DEC);
-  Serial.print("> BAT_SENSE_VBP: ");
+  Serial.print(F("> BAT_SENSE_VBP: "));
   Serial.println(cfg.BAT_SENSE_VBP, DEC);
-  Serial.print("> BAT_MIN_VOLTAGE: ");
+  Serial.print(F("> BAT_MIN_VOLTAGE: "));
   Serial.println(cfg.BAT_MIN_VOLTAGE, DEC);
-  Serial.print("> ACTIVATION_METHOD: ");
+  Serial.print(F("> WAKEUP_BY_INTERRUPT_PINS: "));
+  switch (cfg.WAKEUP_BY_INTERRUPT_PINS)
+  {
+  case 0:
+    Serial.println(F("Disabled"));
+    break;
+  case 1:
+    Serial.println(F("Enabled"));
+    break;
+  default:
+    Serial.println(F("Unkown"));
+    break;
+  }
+  Serial.print(F("> CONFIRMED_DATA_UP: "));
+  switch (cfg.CONFIRMED_DATA_UP)
+  {
+  case 0:
+    Serial.println(F("Unconfirmed Data Up"));
+    break;
+  case 1:
+    Serial.println(F("Confirmed Data Up"));
+    break;
+  default:
+    Serial.println(F("Unkown"));
+    break;
+  }
+  Serial.print(F("> ACTIVATION_METHOD: "));
   switch (cfg.ACTIVATION_METHOD)
   {
   case 1:
-    Serial.println("OTAA");
+    Serial.println(F("OTAA"));
     break;
   case 2:
-    Serial.println("ABP");
+    Serial.println(F("ABP"));
     break;
   default:
-    Serial.println("Unkown");
+    Serial.println(F("Unkown"));
     break;
   }
-  Serial.print("> NWKSKEY (MSB): ");
+  Serial.print(F("> NWKSKEY (MSB): "));
   printHex(cfg.NWKSKEY, sizeof(cfg.NWKSKEY));
-  Serial.print("\n> APPSKEY (MSB): ");
+  Serial.print(F("\n> APPSKEY (MSB): "));
   printHex(cfg.APPSKEY, sizeof(cfg.APPSKEY));
-  Serial.print("\n> DEVADDR (MSB): ");
+  Serial.print(F("\n> DEVADDR (MSB): "));
   Serial.print(cfg.DEVADDR, HEX);
-  Serial.print("\n> APPEUI (LSB): ");
+  Serial.print(F("\n> APPEUI (LSB): "));
   printHex(cfg.APPEUI, sizeof(cfg.APPEUI));
-  Serial.print("\n> DEVEUI (LSB): ");
+  Serial.print(F("\n> DEVEUI (LSB): "));
   printHex(cfg.DEVEUI, sizeof(cfg.DEVEUI));
-  Serial.print("\n> APPKEY (MSB): ");
+  Serial.print(F("\n> APPKEY (MSB): "));
   printHex(cfg.APPKEY, sizeof(cfg.APPKEY));
   Serial.println();
 
   if (raw)
   {
-    Serial.print("> RAW (");
+    Serial.print(F("> RAW ("));
     Serial.print((uint32_t)sizeof(cfg), DEC);
-    Serial.print(" bytes): ");
+    Serial.print(F(" bytes): "));
     byte c;
     for (uint8_t i = CFG_START; i < sizeof(cfg); i++)
     {
@@ -330,27 +401,26 @@ void serialMenu()
 {
   unsigned long timer = millis();
 
-  Serial.println("\n== CONFIG MENU ==");
-  Serial.println("[1] Show current config");
-  Serial.println("[2] Set new config");
-  Serial.println("[3] Erase current config");
-  Serial.println("[4] Voltage calibration");
-  Serial.print("Select: ");
+  Serial.println(F("\n== CONFIG MENU =="));
+  Serial.println(F("[1] Show current config"));
+  Serial.println(F("[2] Set new config"));
+  Serial.println(F("[3] Erase current config"));
+  Serial.println(F("[4] Voltage calibration"));
+  Serial.print(F("Select: "));
   serialWait();
 
   if (Serial.available() > 0)
   {
-
     switch (Serial.read())
     {
     case '1':
-      Serial.println("\n\n== SHOW CONFIG ==");
+      Serial.println(F("\n\n== SHOW CONFIG =="));
       showConfig(true);
       break;
 
     case '2':
-      Serial.println("\n\n== SET CONFIG ==");
-      Serial.print("Past new config: ");
+      Serial.println(F("\n\n== SET CONFIG =="));
+      Serial.print(F("Past new config: "));
       serialWait();
       if (Serial.available() > 0)
       {
@@ -359,8 +429,8 @@ void serialMenu()
       break;
 
     case '3':
-      Serial.println("\n\n== ERASE CONFIG ==");
-      Serial.print("Are you sure you want to erase the EEPROM? [y]es or [n]o: ");
+      Serial.println(F("\n\n== ERASE CONFIG =="));
+      Serial.print(F("Are you sure you want to erase the EEPROM? [y]es or [n]o: "));
       serialWait();
       Serial.println();
       if (Serial.available() > 0)
@@ -368,18 +438,18 @@ void serialMenu()
         if (Serial.read() == 'y')
         {
           eraseConfig();
-          Serial.println("Successfull!");
+          Serial.println(F("Successfull!"));
           readConfig();
         }
         else
         {
-          Serial.println("Aborted!");
+          Serial.println(F("Aborted!"));
         }
       }
       break;
 
     case '4':
-      Serial.println("\n\n== VOLTAGE CALIBRATION ==");
+      Serial.println(F("\n\n== VOLTAGE CALIBRATION =="));
       while (!Serial.available())
       {
         if (millis() - timer > VOL_DEBUG_INTERVAL)
@@ -400,12 +470,16 @@ void do_send(osjob_t *j)
   // Check if there is not a current TX/RX job running
   if (LMIC.opmode & OP_TXRXPEND)
   {
-#ifdef VERBOSE
-    Serial.println(F("OP_TXRXPEND, not sending"));
-#endif
+    // Serial.println(F("OP_TXRXPEND, not sending"));
   }
   else
   {
+    // Unsigned 16 bits integer, 0 up to 65535
+    uint16_t bat = 0;
+
+    // Battery
+    bat = readBat() * 100;
+
     // Signed 16 bits integer, -32767 up to +32767
     int16_t temp1 = -127;
     int16_t temp2 = -127;
@@ -413,10 +487,6 @@ void do_send(osjob_t *j)
     // Unsigned 16 bits integer, 0 up to 65535
     uint16_t humi1 = 0;
     uint16_t press1 = 0;
-    uint16_t bat = 0;
-
-    // Battery
-    bat = readBat() * 100;
 
     // Read sensor values von BME280
     // and multiply by 100 to effectively keep 2 decimals
@@ -431,44 +501,49 @@ void do_send(osjob_t *j)
     temp2 = ds.getTempC(dsSensor) * 100;
 
     byte buffer[12];
-    buffer[0] = temp1 >> 8;
-    buffer[1] = temp1;
-    buffer[2] = humi1 >> 8;
-    buffer[3] = humi1;
-    buffer[4] = press1 >> 8;
-    buffer[5] = press1;
-    buffer[6] = temp2 >> 8;
-    buffer[7] = temp2;
-    buffer[8] = bat >> 8;
-    buffer[9] = bat;
-    buffer[10] = VERSION_MAJOR;
-    buffer[11] = VERSION_MINOR;
-    LMIC_setTxData2(1, buffer, sizeof(buffer), 0);
+    buffer[0] = pinState;
+    buffer[1] = bat >> 8;
+    buffer[2] = bat;
+    buffer[3] = (VERSION_MAJOR << 4) | (VERSION_MINOR & 0xf);
+    buffer[4] = temp1 >> 8;
+    buffer[5] = temp1;
+    buffer[6] = humi1 >> 8;
+    buffer[7] = humi1;
+    buffer[8] = press1 >> 8;
+    buffer[9] = press1;
+    buffer[10] = temp2 >> 8;
+    buffer[11] = temp2;
 
-#ifdef DEBUG
-    Serial.println(F("Prepare package"));
-    Serial.print(F("> FW Version  "));
-    Serial.print(VERSION_MAJOR);
-    Serial.print(F("."));
-    Serial.println(VERSION_MINOR);
-    Serial.print(F("> BME Temp:   "));
-    Serial.println(temp1);
-    Serial.print(F("> BME Humi:   "));
-    Serial.println(humi1);
-    Serial.print(F("> BME Pres:   "));
-    Serial.println(press1);
-    Serial.print(F("> DS18x Temp: "));
-    Serial.println(temp2);
-    Serial.print(F("> Batt:       "));
-    Serial.println(bat);
-    Serial.print(F("> Payload:    "));
+#ifdef DEBUG_PRINT
+    Serial.print(F("Prepare package #"));
+    Serial.println(++prepareCount);
+    // Serial.print(F("> FW: v"));
+    // Serial.print(VERSION_MAJOR);
+    // Serial.print(F("."));
+    // Serial.print(VERSION_MINOR);
+    // Serial.print(F("> Batt: "));
+    // Serial.println(bat);
+    // Serial.print(F("> Pins: "));
+    // Serial.println(buffer[0], BIN);
+    // Serial.print(F("> BME Temp: "));
+    // Serial.println(temp1);
+    // Serial.print(F("> BME Humi: "));
+    // Serial.println(humi1);
+    // Serial.print(F("> BME Pres: "));
+    // Serial.println(press1);
+    // Serial.print(F("> DS18x Temp: "));
+    // Serial.println(temp2);
+    Serial.print(F("> Payload: "));
     printHex(buffer, sizeof(buffer));
     Serial.println();
 #endif
 
+    // Print first debug messages in loop immediately
+    lastPrintTime = 0;
+
     // Prepare upstream data transmission at the next possible time.
-    LMIC_setTxData2(1, buffer, sizeof(buffer), 0);
-#ifdef DEBUG
+    LMIC_setTxData2(1, buffer, sizeof(buffer), cfg.CONFIRMED_DATA_UP);
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa packet queued"));
 #endif
   }
@@ -562,66 +637,95 @@ void lmicStartup()
   // #endif
 }
 
-extern volatile unsigned long timer0_millis;
-void fixMillis(unsigned long offset)
-{
-  uint8_t oldSREG = SREG;
-  cli();
-  timer0_millis += offset;
-  SREG = oldSREG;
-  sei();
-}
-
 void do_sleep(uint16_t sleepTime)
 {
 
   uint16_t sleepTimeLeft = sleepTime;
+  boolean breaksleep = false;
 
-#ifdef DEBUG
+  // Allow wake up pin to trigger interrupt on low.
+  // https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
+  {
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0), wakeUp0, RISING);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1), wakeUp1, RISING);
+  }
+
+  wakedFromISR0 = false;
+  wakedFromISR1 = false;
+
+#ifdef DEBUG_PRINT
   Serial.print(F("Sleep "));
-  Serial.print(sleepTime);
-  Serial.println(F("s\n"));
+  if (sleepTime <= 0)
+  {
+    Serial.println(F("FOREVER\n"));
+  }
+  else
+  {
+    Serial.print(sleepTime);
+    Serial.println(F("s\n"));
+  }
   Serial.flush();
 #endif
-
   // sleep logic using LowPower library
-  uint16_t delays[] = {8, 4, 2, 1};
-  period_t sleeptimes[] = {SLEEP_8S, SLEEP_4S, SLEEP_2S, SLEEP_1S};
-
-  for (uint8_t i = 0; i <= 3; i++)
+  if (sleepTime <= 0)
   {
-    for (uint16_t x = sleepTimeLeft; x >= delays[i]; x -= delays[i])
+    LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+  }
+  else
+  {
+
+    // sleep logic using LowPower library
+    uint16_t delays[] = {8, 4, 2, 1};
+    period_t sleeptimes[] = {SLEEP_8S, SLEEP_4S, SLEEP_2S, SLEEP_1S};
+    breaksleep = false;
+
+    for (uint8_t i = 0; (i <= 3 && !breaksleep); i++)
     {
-      // Serial.print("i: ");
-      // Serial.print(i);
-      // Serial.print(" TL: ");
-      // Serial.print(sleepTimeLeft);
-      // Serial.print(" S: ");
-      // Serial.println(delays[i]);
-      // Serial.flush();
-      LowPower.powerDown(sleeptimes[i], ADC_OFF, BOD_OFF);
-      sleepTimeLeft -= delays[i];
+      for (uint16_t x = sleepTimeLeft; (x >= delays[i] && !breaksleep); x -= delays[i])
+      {
+        // Serial.print("i: ");
+        // Serial.print(i);
+        // Serial.print(" TL: ");
+        // Serial.print(sleepTimeLeft);
+        // Serial.print(" S: ");
+        // Serial.println(delays[i]);
+        // Serial.flush();
+        LowPower.powerDown(sleeptimes[i], ADC_OFF, BOD_OFF);
+        if (wakedFromISR0 || wakedFromISR1)
+        {
+          breaksleep = true;
+        }
+        else
+        {
+          sleepTimeLeft -= delays[i];
+        }
+      }
     }
   }
 
-  fixMillis(sleepTime * 1000);
+  // Disable external pin interrupt on wake up pin.
+  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
+  {
+    detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0));
+    detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1));
+  }
 }
 
 void onEvent(ev_t ev)
 {
-  boolean sleep = true;
   switch (ev)
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   case EV_JOINING:
     Serial.println(F("LoRa joining..."));
     break;
 #endif
   case EV_JOINED:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa joined!"));
 #endif
-    // #ifndef ABP
+
     if (cfg.ACTIVATION_METHOD == OTAA)
     {
       {
@@ -630,6 +734,7 @@ void onEvent(ev_t ev)
         u1_t nwkKey[16];
         u1_t artKey[16];
         LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
+#ifdef DEBUG_PRINT
         Serial.print(F("> NetID: "));
         Serial.println(netid, DEC);
         Serial.print(F("> DevAddr (MSB): "));
@@ -640,6 +745,8 @@ void onEvent(ev_t ev)
         Serial.print(F("> NwkSKey (MSB): "));
         printHex(nwkKey, sizeof(nwkKey));
         Serial.println();
+        Serial.println();
+#endif
       }
 
       // Disable link check validation (automatically enabled
@@ -648,81 +755,59 @@ void onEvent(ev_t ev)
 
       // Ok send our first data in 10 ms
       os_setTimedCallback(&sendjob, os_getTime() + ms2osticks(10), do_send);
-      // #endif
     }
     break;
   case EV_JOIN_FAILED:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa join failed"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_REJOIN_FAILED:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("EV_REJOIN_FAILED"));
 #endif
     lmicStartup(); //Reset LMIC and retry
     break;
 
   case EV_TXSTART:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     // Serial.println(F("EV_TXSTART"));
 #endif
     break;
   case EV_TXCOMPLETE:
-#ifdef DEBUG
-    Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
+#ifdef DEBUG_PRINT
+    Serial.print(F("LoRa TX complete #")); // (includes waiting for RX windows)
+    Serial.println(LMIC.seqnoUp);
     if (LMIC.txrxFlags & TXRX_ACK)
       Serial.println(F("> Received ack"));
-#endif
-#ifdef VERBOSE
-    if (LMIC.dataLen)
-    {
-
-      Serial.print(F("> Received "));
-      Serial.print(LMIC.dataLen);
-      Serial.print(F(" bytes of payload: "));
-      for (int i = 0; i < LMIC.dataLen; i++)
-      {
-        if (LMIC.frame[LMIC.dataBeg + i] < 0x10)
-        {
-          Serial.print(F("0"));
-        }
-        Serial.print(LMIC.frame[LMIC.dataBeg + i], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-    }
+    if (LMIC.txrxFlags & TXRX_NACK)
+      Serial.println(F("> Received NO ack"));
 #endif
 
-    // Power down LoRa Module
-    LMIC.opmode = OP_SHUTDOWN;
+    // if (LMIC.dataLen)
+    // {
 
-    // Going to sleep
-    while (sleep)
-    {
-      do_sleep(cfg.SLEEPTIME);
-      if (readBat() >= cfg.BAT_MIN_VOLTAGE)
-      {
-        sleep = false;
-      }
-      else
-      {
-#ifdef DEBUG
-        Serial.println(F("Battery voltage to low!"));
-#endif
-      }
-    }
+    //   Serial.print(F("> Received "));
+    //   Serial.print(LMIC.dataLen);
+    //   Serial.print(F(" bytes of payload: "));
+    //   for (int i = 0; i < LMIC.dataLen; i++)
+    //   {
+    //     if (LMIC.frame[LMIC.dataBeg + i] < 0x10)
+    //     {
+    //       Serial.print(F("0"));
+    //     }
+    //     Serial.print(LMIC.frame[LMIC.dataBeg + i], HEX);
+    //     Serial.print(" ");
+    //   }
+    //   Serial.println();
+    // }
 
-    // Power up LoRa Module
-    LMIC.opmode = OP_NONE;
-
-    // Schedule next transmission
-    os_setCallback(&sendjob, do_send);
+    TXCompleted = true;
     break;
 
   case EV_JOIN_TXCOMPLETE:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("LoRa NO JoinAccept"));
 #endif
     break;
@@ -739,11 +824,51 @@ void onEvent(ev_t ev)
   case EV_TXCANCELED:
   case EV_RXSTART:
   default:
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.print(F("Unknown event: "));
     Serial.println((unsigned)ev);
 #endif
     break;
+  }
+}
+
+void updatePins()
+{
+  if (wakedFromISR0 || wakedFromISR1)
+  {
+#ifdef DEBUG_PRINT
+    Serial.print(F("Wakeup from interrupt pin "));
+#endif
+    if (wakedFromISR0)
+    {
+#ifdef DEBUG_PRINT
+      Serial.println(F("0!"));
+#endif
+      pinState |= STATE_ITR0;    // set bit in pinState byte to 1
+      pinState &= ~(STATE_ITR1); // set bit in pinState byte to 0
+    }
+
+    if (wakedFromISR1)
+    {
+#ifdef DEBUG_PRINT
+      Serial.println(F("1!"));
+#endif
+      pinState |= STATE_ITR1;    // set bit in pinState byte to 1
+      pinState &= ~(STATE_ITR0); // set bit in pinState byte to 0
+    }
+
+    // set STATE_ITR_EVT bit in pinState byte to 1
+    // this means this pin was set now
+    pinState |= STATE_ITR_TRIGGER;
+
+    wakedFromISR0 = false;
+    wakedFromISR1 = false;
+  }
+  else
+  {
+    // set STATE_ITR_EVT bit in pinState byte to 0
+    // this means that the pin states was set previously
+    pinState &= ~(STATE_ITR_TRIGGER);
   }
 }
 
@@ -752,8 +877,7 @@ void setup()
   // use the 1.1 V internal reference
   analogReference(INTERNAL);
 
-  //pinMode(LED_BUILTIN, OUTPUT);
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   while (!Serial)
     ; // wait for Serial to be initialized
   Serial.begin(9600);
@@ -774,7 +898,7 @@ void setup()
 #else
   if (!cfg.CONFIG_IS_VALID)
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("INVALID CONFIG!"));
 #endif
     while (true)
@@ -783,21 +907,21 @@ void setup()
   }
 #endif
 
-#ifdef DEBUG
-  Serial.print("Search DS18x...");
+#ifdef DEBUG_PRINT
+  Serial.print(F("Search DS18x..."));
 #endif
 
   ds.begin();
   ds.requestTemperatures();
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   Serial.print(ds.getDeviceCount(), DEC);
-  Serial.println(" found");
+  Serial.println(F(" found"));
 #endif
 
   for (uint8_t i = 0; i < ds.getDeviceCount(); i++)
   {
-#ifdef DEBUG
+#ifdef CONFIG
     Serial.print(F("> #"));
     Serial.print(i);
     Serial.print(F(": "));
@@ -811,13 +935,8 @@ void setup()
         memcpy(dsSensor, deviceAddress, sizeof(deviceAddress) / sizeof(*deviceAddress));
       }
 
-#ifdef DEBUG
+#ifdef CONFIG
       printHex(deviceAddress, sizeof(deviceAddress));
-#endif
-
-#ifdef VERBOSE
-      printHex(deviceAddress, sizeof(deviceAddress));
-
       Serial.print(" --> ");
       uint8_t scratchPad[9];
       ds.readScratchPad(deviceAddress, scratchPad);
@@ -825,24 +944,36 @@ void setup()
       Serial.print(" --> ");
       Serial.print(ds.getTempC(deviceAddress));
       Serial.print(" °C");
-#endif
       Serial.println();
+#endif
     }
   }
 
   // BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
   Serial.print(F("Search BME280..."));
 #endif
   if (bme.begin(I2C_ADR_BME))
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("1 found"));
+#endif
+#ifdef CONFIG
+    bme.takeForcedMeasurement();
+    Serial.print(F("> Temperatur: "));
+    Serial.print(bme.readTemperature());
+    Serial.println(" °C");
+    Serial.print(F("> Humidity: "));
+    Serial.print(bme.readHumidity());
+    Serial.println(" %RH");
+    Serial.print(F("> Pressure: "));
+    Serial.print(bme.readPressure() / 100.0F);
+    Serial.println(" hPa");
 #endif
   }
   else
   {
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
     Serial.println(F("not found"));
 #endif
   }
@@ -855,10 +986,6 @@ void setup()
   lmicStartup();
 #endif
 
-#ifdef VERBOSE
-  Serial.println(F("Setup complete. Begin with LoRa"));
-#endif
-
 #ifndef CONFIG
 
   Serial.print(F("Join via "));
@@ -866,7 +993,7 @@ void setup()
   // ABP Mode
   if (cfg.ACTIVATION_METHOD == ABP)
   {
-    Serial.println(F("ABP..."));
+    Serial.println(F("ABP"));
     // Start job in ABP Mode
     do_send(&sendjob);
   }
@@ -874,7 +1001,7 @@ void setup()
   // OTAA Mode
   else if (cfg.ACTIVATION_METHOD == OTAA)
   {
-    Serial.println(F("OTAA..."));
+    Serial.println(F("OTAA"));
     // Start job (sending automatically starts OTAA too)
     // Join the network, sending will be started after the event "Joined"
     LMIC_startJoining();
@@ -889,12 +1016,50 @@ void setup()
 
 void loop()
 {
-#ifdef CONFIG
 
+#ifdef CONFIG
   serialMenu();
-  // readBat();
-  // delay(1000);
 #else
+
   os_runloop_once();
+
+  // Previous TX is complete and also no critical jobs pending in LMIC
+  if (TXCompleted)
+  {
+    TXCompleted = false;
+
+    // Going to sleep
+    boolean sleep = true;
+    while (sleep)
+    {
+      do_sleep(cfg.SLEEPTIME);
+      if (readBat() >= cfg.BAT_MIN_VOLTAGE)
+      {
+        sleep = false;
+      }
+      else
+      {
+#ifdef DEBUG_PRINT
+        Serial.println(F("Batt V to low!"));
+#endif
+      }
+    }
+
+    updatePins();
+
+    // sleep ended. do next transmission
+    do_send(&sendjob);
+  }
+  else if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
+  {
+#ifdef DEBUG_PRINT
+    Serial.print(F("Cannot sleep. txCnt="));
+    Serial.print(LMIC.txCnt);
+    Serial.println();
+#endif
+    lastPrintTime = millis();
+  }
+
+  updatePins();
 #endif
 }

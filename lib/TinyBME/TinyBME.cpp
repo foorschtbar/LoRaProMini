@@ -173,7 +173,7 @@ bool TinyBME::takeForcedMeasurement(void)
         delay(1);
     }
 
-    return true;
+    return return_value;
 }
 
 // Returns the temperature from the sensor
