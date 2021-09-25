@@ -42,6 +42,10 @@
 // Start address in EEPROM for structure 'cfg'
 #define CFG_START 0
 
+// Config size
+#define CFG_SIZE 82
+#define CFG_SIZE_WITH_CHECKSUM 86
+
 // ++++++++++++++++++++++++++++++++++++++++
 //
 // LIBS
@@ -174,19 +178,19 @@ float readBat()
   float batteryV = value * cfg.BAT_SENSE_VBP;
 
 #ifdef CONFIG
-  Serial.print("Analoge voltage: ");
+  Serial.print(F("Analoge voltage: "));
   Serial.print(((1.1 / 1024.0) * value), 2);
-  Serial.print(" V | Analoge value: ");
+  Serial.print(F(" V | Analoge value: "));
   Serial.print(value);
-  Serial.print(" (");
+  Serial.print(F(" ("));
   Serial.print(((100.0 / 1023.0) * value), 1);
-  Serial.print("% of Range) | Battery voltage: ");
+  Serial.print(F("% of Range) | Battery voltage: "));
   Serial.print(batteryV, 1);
-  Serial.print(" V (");
+  Serial.print(F(" V ("));
   Serial.print(batteryV, 2);
-  Serial.print(" V, VBP=");
+  Serial.print(F(" V, VBP="));
   Serial.print(cfg.BAT_SENSE_VBP, 10);
-  Serial.println(")");
+  Serial.println(F(")"));
 #endif
 
   return batteryV;
@@ -216,13 +220,13 @@ void readConfig()
 
 void setConfig()
 {
-  byte newcfg[sizeof(cfg) + 4];
+  byte cfgbuffer[CFG_SIZE_WITH_CHECKSUM];
   char buffer[3];
   char *pEnd;
   uint32_t crc_data = 0;
   CRC32 crc;
 
-  for (uint8_t i = 0; i < sizeof(newcfg); i++)
+  for (uint8_t i = 0; i < CFG_SIZE_WITH_CHECKSUM; i++)
   {
     if (!Serial.readBytes(buffer, 2))
     {
@@ -233,9 +237,10 @@ void setConfig()
     buffer[3] = '\0';
 
     // convert null-terminated char buffer with hex values to int
-    newcfg[i] = (byte)strtol(buffer, &pEnd, 16);
+    cfgbuffer[i] = (byte)strtol(buffer, &pEnd, 16);
 
-    if (i < sizeof(cfg))
+    // Add bytes to crc calculation
+    if (i < CFG_SIZE)
     {
       // Add hex chars from buffer without null-terminator
       crc.update(buffer, 2);
@@ -245,122 +250,122 @@ void setConfig()
       // Store checksum from serial input
       // later compare
       crc_data <<= 8;
-      crc_data |= newcfg[i];
+      crc_data |= cfgbuffer[i];
     }
 
     // Pad to 8 bit
     // Add zero prefix to serial output
-    newcfg[i] &= 0xff;
-    if (newcfg[i] < 16)
+    cfgbuffer[i] &= 0xff;
+    if (cfgbuffer[i] < 16)
       Serial.write(48); // 0
 
-    Serial.print(newcfg[i], HEX);
+    Serial.print(cfgbuffer[i], HEX);
     Serial.print(" ");
   }
 
   Serial.println();
 
-  Serial.print("> CHECKSUM (Serial Input): 0x");
+  Serial.print(F("> CHECKSUM (Serial Input): 0x"));
   Serial.print(crc_data, HEX);
   Serial.println();
 
   uint32_t crc_calculated = crc.finalize();
-  Serial.print("> CHECKSUM (Calculated):   0x");
+  Serial.print(F("> CHECKSUM (Calculated):   0x"));
   Serial.println(crc_calculated, HEX);
 
   if (crc_data == crc_calculated)
   {
 
-    Serial.println("> Checksum correct. Configuration saved!");
+    Serial.println(F("> Checksum correct. Configuration saved!"));
 
-    for (uint8_t i = CFG_START; i < sizeof(cfg); i++)
+    for (uint8_t i = CFG_START; i < CFG_SIZE; i++)
     {
-      EEPROM.write(i, (uint8_t)newcfg[i]);
+      EEPROM.write(i, (uint8_t)cfgbuffer[i]);
     }
 
     readConfig();
   }
   else
   {
-    Serial.println("> INVALID CHECKSUM! Process aborted! ");
+    Serial.println(F("> INVALID CHECKSUM! Process aborted! "));
   }
 }
 
 void showConfig(bool raw = false)
 {
-  Serial.print("> CONFIG_IS_VALID: ");
+  Serial.print(F("> CONFIG_IS_VALID: "));
   if (cfg.CONFIG_IS_VALID == 1)
   {
-    Serial.println("yes");
+    Serial.println(F("yes"));
   }
   else
   {
-    Serial.println("no");
+    Serial.println(F("no"));
   }
-  Serial.print("> SLEEPTIME: ");
+  Serial.print(F("> SLEEPTIME: "));
   Serial.println(cfg.SLEEPTIME, DEC);
-  Serial.print("> BAT_SENSE_VBP: ");
+  Serial.print(F("> BAT_SENSE_VBP: "));
   Serial.println(cfg.BAT_SENSE_VBP, DEC);
-  Serial.print("> BAT_MIN_VOLTAGE: ");
+  Serial.print(F("> BAT_MIN_VOLTAGE: "));
   Serial.println(cfg.BAT_MIN_VOLTAGE, DEC);
-  Serial.print("> WAKEUP_BY_INTERRUPT_PINS: ");
+  Serial.print(F("> WAKEUP_BY_INTERRUPT_PINS: "));
   switch (cfg.WAKEUP_BY_INTERRUPT_PINS)
   {
   case 0:
-    Serial.println("Disabled");
+    Serial.println(F("Disabled"));
     break;
   case 1:
-    Serial.println("Enabled");
+    Serial.println(F("Enabled"));
     break;
   default:
-    Serial.println("Unkown");
+    Serial.println(F("Unkown"));
     break;
   }
-  Serial.print("> CONFIRMED_DATA_UP: ");
+  Serial.print(F("> CONFIRMED_DATA_UP: "));
   switch (cfg.CONFIRMED_DATA_UP)
   {
   case 0:
-    Serial.println("Unconfirmed Data Up");
+    Serial.println(F("Unconfirmed Data Up"));
     break;
   case 1:
-    Serial.println("Confirmed Data Up");
+    Serial.println(F("Confirmed Data Up"));
     break;
   default:
-    Serial.println("Unkown");
+    Serial.println(F("Unkown"));
     break;
   }
-  Serial.print("> ACTIVATION_METHOD: ");
+  Serial.print(F("> ACTIVATION_METHOD: "));
   switch (cfg.ACTIVATION_METHOD)
   {
   case 1:
-    Serial.println("OTAA");
+    Serial.println(F("OTAA"));
     break;
   case 2:
-    Serial.println("ABP");
+    Serial.println(F("ABP"));
     break;
   default:
-    Serial.println("Unkown");
+    Serial.println(F("Unkown"));
     break;
   }
-  Serial.print("> NWKSKEY (MSB): ");
+  Serial.print(F("> NWKSKEY (MSB): "));
   printHex(cfg.NWKSKEY, sizeof(cfg.NWKSKEY));
-  Serial.print("\n> APPSKEY (MSB): ");
+  Serial.print(F("\n> APPSKEY (MSB): "));
   printHex(cfg.APPSKEY, sizeof(cfg.APPSKEY));
-  Serial.print("\n> DEVADDR (MSB): ");
+  Serial.print(F("\n> DEVADDR (MSB): "));
   Serial.print(cfg.DEVADDR, HEX);
-  Serial.print("\n> APPEUI (LSB): ");
+  Serial.print(F("\n> APPEUI (LSB): "));
   printHex(cfg.APPEUI, sizeof(cfg.APPEUI));
-  Serial.print("\n> DEVEUI (LSB): ");
+  Serial.print(F("\n> DEVEUI (LSB): "));
   printHex(cfg.DEVEUI, sizeof(cfg.DEVEUI));
-  Serial.print("\n> APPKEY (MSB): ");
+  Serial.print(F("\n> APPKEY (MSB): "));
   printHex(cfg.APPKEY, sizeof(cfg.APPKEY));
   Serial.println();
 
   if (raw)
   {
-    Serial.print("> RAW (");
+    Serial.print(F("> RAW ("));
     Serial.print((uint32_t)sizeof(cfg), DEC);
-    Serial.print(" bytes): ");
+    Serial.print(F(" bytes): "));
     byte c;
     for (uint8_t i = CFG_START; i < sizeof(cfg); i++)
     {
@@ -396,27 +401,26 @@ void serialMenu()
 {
   unsigned long timer = millis();
 
-  Serial.println("\n== CONFIG MENU ==");
-  Serial.println("[1] Show current config");
-  Serial.println("[2] Set new config");
-  Serial.println("[3] Erase current config");
-  Serial.println("[4] Voltage calibration");
-  Serial.print("Select: ");
+  Serial.println(F("\n== CONFIG MENU =="));
+  Serial.println(F("[1] Show current config"));
+  Serial.println(F("[2] Set new config"));
+  Serial.println(F("[3] Erase current config"));
+  Serial.println(F("[4] Voltage calibration"));
+  Serial.print(F("Select: "));
   serialWait();
 
   if (Serial.available() > 0)
   {
-
     switch (Serial.read())
     {
     case '1':
-      Serial.println("\n\n== SHOW CONFIG ==");
+      Serial.println(F("\n\n== SHOW CONFIG =="));
       showConfig(true);
       break;
 
     case '2':
-      Serial.println("\n\n== SET CONFIG ==");
-      Serial.print("Past new config: ");
+      Serial.println(F("\n\n== SET CONFIG =="));
+      Serial.print(F("Past new config: "));
       serialWait();
       if (Serial.available() > 0)
       {
@@ -425,8 +429,8 @@ void serialMenu()
       break;
 
     case '3':
-      Serial.println("\n\n== ERASE CONFIG ==");
-      Serial.print("Are you sure you want to erase the EEPROM? [y]es or [n]o: ");
+      Serial.println(F("\n\n== ERASE CONFIG =="));
+      Serial.print(F("Are you sure you want to erase the EEPROM? [y]es or [n]o: "));
       serialWait();
       Serial.println();
       if (Serial.available() > 0)
@@ -434,18 +438,18 @@ void serialMenu()
         if (Serial.read() == 'y')
         {
           eraseConfig();
-          Serial.println("Successfull!");
+          Serial.println(F("Successfull!"));
           readConfig();
         }
         else
         {
-          Serial.println("Aborted!");
+          Serial.println(F("Aborted!"));
         }
       }
       break;
 
     case '4':
-      Serial.println("\n\n== VOLTAGE CALIBRATION ==");
+      Serial.println(F("\n\n== VOLTAGE CALIBRATION =="));
       while (!Serial.available())
       {
         if (millis() - timer > VOL_DEBUG_INTERVAL)
@@ -513,22 +517,22 @@ void do_send(osjob_t *j)
 #ifdef DEBUG_PRINT
     Serial.print(F("Prepare package #"));
     Serial.println(++prepareCount);
-    Serial.print(F("> FW: v"));
-    Serial.print(VERSION_MAJOR);
-    Serial.print(F("."));
-    Serial.print(VERSION_MINOR);
-    Serial.print(F("> Batt: "));
-    Serial.println(bat);
-    Serial.print(F("> Pins: "));
-    Serial.println(buffer[0], BIN);
-    Serial.print(F("> BME Temp: "));
-    Serial.println(temp1);
-    Serial.print(F("> BME Humi: "));
-    Serial.println(humi1);
-    Serial.print(F("> BME Pres: "));
-    Serial.println(press1);
-    Serial.print(F("> DS18x Temp: "));
-    Serial.println(temp2);
+    // Serial.print(F("> FW: v"));
+    // Serial.print(VERSION_MAJOR);
+    // Serial.print(F("."));
+    // Serial.print(VERSION_MINOR);
+    // Serial.print(F("> Batt: "));
+    // Serial.println(bat);
+    // Serial.print(F("> Pins: "));
+    // Serial.println(buffer[0], BIN);
+    // Serial.print(F("> BME Temp: "));
+    // Serial.println(temp1);
+    // Serial.print(F("> BME Humi: "));
+    // Serial.println(humi1);
+    // Serial.print(F("> BME Pres: "));
+    // Serial.println(press1);
+    // Serial.print(F("> DS18x Temp: "));
+    // Serial.println(temp2);
     Serial.print(F("> Payload: "));
     printHex(buffer, sizeof(buffer));
     Serial.println();
@@ -654,7 +658,7 @@ void do_sleep(uint16_t sleepTime)
   Serial.print(F("Sleep "));
   if (sleepTime <= 0)
   {
-    Serial.println("FOREVER\n");
+    Serial.println(F("FOREVER\n"));
   }
   else
   {
@@ -833,7 +837,7 @@ void updatePins()
   if (wakedFromISR0 || wakedFromISR1)
   {
 #ifdef DEBUG_PRINT
-    Serial.print(F("Wakeup from interrupt "));
+    Serial.print(F("Wakeup from interrupt pin "));
 #endif
     if (wakedFromISR0)
     {
@@ -904,7 +908,7 @@ void setup()
 #endif
 
 #ifdef DEBUG_PRINT
-  Serial.print("Search DS18x...");
+  Serial.print(F("Search DS18x..."));
 #endif
 
   ds.begin();
@@ -912,7 +916,7 @@ void setup()
 
 #ifdef DEBUG_PRINT
   Serial.print(ds.getDeviceCount(), DEC);
-  Serial.println(" found");
+  Serial.println(F(" found"));
 #endif
 
   for (uint8_t i = 0; i < ds.getDeviceCount(); i++)
