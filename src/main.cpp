@@ -114,8 +114,9 @@ configData_t cfg; // Instance 'cfg' is a global variable with 'configData_t' str
 volatile boolean wakedFromISR0 = false;
 volatile boolean wakedFromISR1 = false;
 unsigned long lastPrintTime = 0;
+unsigned long prepareCount = 0;
 boolean TXCompleted = false;
-byte pinState = 0;
+byte pinState = 0x0;
 
 // These callbacks are used in over-the-air activation
 void os_getArtEui(u1_t *buf)
@@ -510,24 +511,25 @@ void do_send(osjob_t *j)
     buffer[11] = temp2;
 
 #ifdef DEBUG_PRINT
-    Serial.println(F("Prepare package"));
-    //     Serial.print(F("> FW Version: "));
-    //     Serial.print(VERSION_MAJOR);
-    //     Serial.print(F("."));
-    //     Serial.println(VERSION_MINOR);
-    //     Serial.print(F("> Batt:       "));
-    //     Serial.println(bat);
-    //     Serial.print(F("> Pins:       "));
-    //     Serial.println(buffer[0], BIN);
-    //     Serial.print(F("> BME Temp:   "));
-    //     Serial.println(temp1);
-    //     Serial.print(F("> BME Humi:   "));
-    //     Serial.println(humi1);
-    //     Serial.print(F("> BME Pres:   "));
-    //     Serial.println(press1);
-    //     Serial.print(F("> DS18x Temp: "));
-    //     Serial.println(temp2);
-    Serial.print(F("> Payload:    "));
+    Serial.print(F("Prepare package #"));
+    Serial.println(++prepareCount);
+    Serial.print(F("> FW: v"));
+    Serial.print(VERSION_MAJOR);
+    Serial.print(F("."));
+    Serial.print(VERSION_MINOR);
+    Serial.print(F("> Batt: "));
+    Serial.println(bat);
+    Serial.print(F("> Pins: "));
+    Serial.println(buffer[0], BIN);
+    Serial.print(F("> BME Temp: "));
+    Serial.println(temp1);
+    Serial.print(F("> BME Humi: "));
+    Serial.println(humi1);
+    Serial.print(F("> BME Pres: "));
+    Serial.println(press1);
+    Serial.print(F("> DS18x Temp: "));
+    Serial.println(temp2);
+    Serial.print(F("> Payload: "));
     printHex(buffer, sizeof(buffer));
     Serial.println();
 #endif
@@ -739,6 +741,7 @@ void onEvent(ev_t ev)
         Serial.print(F("> NwkSKey (MSB): "));
         printHex(nwkKey, sizeof(nwkKey));
         Serial.println();
+        Serial.println();
 #endif
       }
 
@@ -770,7 +773,8 @@ void onEvent(ev_t ev)
     break;
   case EV_TXCOMPLETE:
 #ifdef DEBUG_PRINT
-    Serial.println(F("LoRa TX complete")); // (includes waiting for RX windows)
+    Serial.print(F("LoRa TX complete #")); // (includes waiting for RX windows)
+    Serial.println(LMIC.seqnoUp);
     if (LMIC.txrxFlags & TXRX_ACK)
       Serial.println(F("> Received ack"));
     if (LMIC.txrxFlags & TXRX_NACK)
@@ -826,8 +830,6 @@ void onEvent(ev_t ev)
 
 void updatePins()
 {
-  byte lastState = pinState;
-
   if (wakedFromISR0 || wakedFromISR1)
   {
 #ifdef DEBUG_PRINT
@@ -871,7 +873,6 @@ void setup()
   // use the 1.1 V internal reference
   analogReference(INTERNAL);
 
-  //pinMode(LED_BUILTIN, OUTPUT);
 #ifdef DEBUG_PRINT
   while (!Serial)
     ; // wait for Serial to be initialized
