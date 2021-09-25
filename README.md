@@ -1,35 +1,47 @@
-# LoRaProMini
+# LoRaProMini - A low power LoRaWAN Node
 
-:warning: This project is a WIP!
+[
+  ![](https://img.shields.io/github/workflow/status/foorschtbar/LoRaProMini/Build%20and%20Release?style=plastic)
+  ![](https://img.shields.io/github/languages/top/foorschtbar/LoRaProMini?style=plastic)
+  ![](https://img.shields.io/github/last-commit/foorschtbar/LoRaProMini?style=plastic)
+  ![](https://img.shields.io/github/commit-activity/y/foorschtbar/LoRaProMini?style=plastic)
+  ![](https://img.shields.io/github/release-date/foorschtbar/LoRaProMini?style=plastic)
+  ![](https://img.shields.io/github/repo-size/foorschtbar/LoRaProMini?style=plastic)
+  ![](https://img.shields.io/github/downloads/foorschtbar/LoRaProMini/total?style=plastic)
+  ![](https://img.shields.io/github/deployments/foorschtbar/LoRaProMini/github-pages?style=plastic)
+  ![](https://img.shields.io/github/license/foorschtbar/LoRaProMini?style=plastic)
+](https://github.com/foorschtbar/LoRaProMini)
 
 A LoRaWAN sensor node for The Things Network, based on an ATMEGA328P (Arduino Pro Mini) and RFM95W/SX1276 LoRa transiver module. 
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
 
-The module can be used to:
-- Collect various climate values with the climate sensors
-- It can tell if the letter carrier has put letters in the mailbox (with two reed switches)
-- It can be used as a wirless button
-- It can notify if someone rang the doorbell
-- ...
+The module can be used:
+- Collect various climate values with environmental sensors. See [Environmental (Weather/Clima) Sensor](#environmental-(weather/clima)-sensor).
+- Tell if the letter carrier has put new letters in your mailbox. See [Mailbox Monitor](#mailbox-monitor).
+- Notify if someone rang the doorbell. See [Doorbell Monitor](#doorbell-monitor).
+- Act a wirless button
+- and many more...
 
 ## Features
-- Deep sleep processor and sensors between data transmissions
-- Two interrupt inputs could use to wake up the processor from deep sleep
-- Confirmend und unconfirmend data up messages
+- Deep sleep MCU and sensors between data transmissions.
+- Two interrupt inputs could use to wake up the MCU and sensors from deep sleep.
+- Confirmend und unconfirmend data up messages.
 - Ultra low power consumption. Under 10μA with all features and sensors.
-- Power input
-    - Battery (Li-Ion with 3.7 works fine)
+- Power input 3.5-6V:
+    - Battery (Li-Ion with 3.7V works fine)
     - Battery with solar charger
-    - Up to 6V
 - Sensor support
     - Bosch BME280 (humidity, barometric pressure and ambient temperature)
-    -  Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire sensor to measure temperature 
+    - Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire temperature sensor 
 
-## Example Applications (TBD)
-- Environmental (Weather/Clima) Sensor
-- Mailbox Monitor
-- Doorbell Monitor
+## Example Applications
+### Environmental (Weather/Clima) Sensor
+- TBD :warning:
+### Mailbox Monitor
+- TBD :warning:
+### Doorbell Monitor
+- TBD :warning:
 
 ## More pics
 
@@ -39,11 +51,10 @@ The module can be used to:
 ![PCB KiCad](.github/pcb_kicad.png)
 ![Outdoor Clima Sensor](.github/outdoor_environmental_sensor.jpg)
 
-
 ## The Things Stack configuration
 
 - LoRaWAN version `MAC V1.0.3`
-- TBD
+- TBD :warning:
 
 ## How to use
 
