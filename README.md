@@ -79,6 +79,9 @@ Example:
 avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1.0_config.hex:i
 ```
 
+## BOM
+- TBD :warning:
+
 ## Firmware Changelog
 
 ### Version 2.0
