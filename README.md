@@ -58,8 +58,8 @@ The module can be used:
 
 ## How to use
 
-1. Manufacture PCB. Here you find the [Gerber](_pcb) files
-1. Assemble PCB. Here you find the [Bill of Materials](https://foorschtbar.github.io/LoRaProMini/_pcb/bom/ibom.html) (BOM)
+1. Manufacture PCB. Here you find the [Gerber](pcb) files
+1. Assemble PCB. Here you find the [Bill of Materials](https://foorschtbar.github.io/LoRaProMini/pcb/bom/ibom.html) (BOM)
 1. Flash config firmware (See [How to flash](#how-to-flash))
 1. Start voltage calibration from menu
 1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 6V
