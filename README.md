@@ -15,6 +15,7 @@
 A LoRaWAN sensor node for The Things Network, based on an ATMEGA328P (Arduino Pro Mini) and RFM95W/SX1276 LoRa transiver module. 
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
+![PCB Front Assembled](.github/pcb_real.jpg)
 
 The module can be used:
 - Collect various climate values with environmental sensors. See [Environmental (Weather/Clima) Sensor](#environmental-weatherclima-sensor).
@@ -83,6 +84,10 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 - TBD :warning:
 
 ## Firmware Changelog
+
+### Version 2.1
+- Improved (debug) logging to serial output
+- BME sends -127°C (link DS18x) if no sensor was found
 
 ### Version 2.0
 - Added wake up trough interrupt pins
