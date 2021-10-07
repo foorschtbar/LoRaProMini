@@ -144,6 +144,8 @@ volatile boolean wakedFromISR1 = false;
 unsigned long lastPrintTime = 0;
 unsigned long prepareCount = 0;
 boolean TXCompleted = false;
+boolean foundBME = false; // BME Sensor found. To skip reading if no sensor is attached
+boolean foundDS = false;  // DS19x Sensor found. To skip reading if no sensor is attached
 byte pinState = 0x0;
 
 // These callbacks are used in over-the-air activation
@@ -505,8 +507,8 @@ void do_send(osjob_t *j)
     bat = readBat() * 100;
 
     // Signed 16 bits integer, -32767 up to +32767
-    int16_t temp1 = -127;
-    int16_t temp2 = -127;
+    int16_t temp1 = -127 * 100;
+    int16_t temp2 = -127 * 100;
 
     // Unsigned 16 bits integer, 0 up to 65535
     uint16_t humi1 = 0;
@@ -514,15 +516,21 @@ void do_send(osjob_t *j)
 
     // Read sensor values von BME280
     // and multiply by 100 to effectively keep 2 decimals
-    bme.takeForcedMeasurement();
-    temp1 = bme.readTemperature() * 100;
-    humi1 = bme.readHumidity() * 100;
-    press1 = bme.readPressure() / 100.0F; // p [300..1100]
+    if (foundBME)
+    {
+      bme.takeForcedMeasurement();
+      temp1 = bme.readTemperature() * 100;
+      humi1 = bme.readHumidity() * 100;
+      press1 = bme.readPressure() / 100.0F; // p [300..1100]
+    }
 
     // Read sensor value form 1-Wire sensor
     // and multiply by 100 to effectively keep 2 decimals
-    ds.requestTemperatures(); // Send the command to get temperatures
-    temp2 = ds.getTempC(dsSensor) * 100;
+    if (foundDS)
+    {
+      ds.requestTemperatures(); // Send the command to get temperatures
+      temp2 = ds.getTempC(dsSensor) * 100;
+    }
 
     byte buffer[12];
     buffer[0] = pinState;
@@ -927,6 +935,8 @@ void setup()
     DeviceAddress deviceAddress;
     if (ds.getAddress(deviceAddress, i))
     {
+      foundDS = true;
+
       // Save first sensor as measurement sensor for later
       if (i == 0)
       {
@@ -952,6 +962,7 @@ void setup()
   log_d(F("Search BME280..."));
   if (bme.begin(I2C_ADR_BME))
   {
+    foundBME = true;
     log_d_ln(F("1 found"));
     if (CONFIG_MODE_ENABLED)
     {
