@@ -61,6 +61,7 @@ The module can be used:
 
 1. Manufacture PCB. Here you find the [Gerber](pcb) files
 1. Assemble PCB. Here you find the [Bill of Materials](https://foorschtbar.github.io/LoRaProMini/pcb/bom/ibom.html) (BOM)
+    - __Attention:__ The current version (v3.0) of the PCB has no ISP header! A pre-burned MEGA328P must be installed. I got one from an Arduino Pro Mini Board, because a completely assembled Arduino is cheaper than a single chip. 
 1. Flash config firmware (See [How to flash](#how-to-flash))
 1. Start voltage calibration from menu
 1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 6V
