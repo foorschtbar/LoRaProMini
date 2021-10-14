@@ -108,6 +108,9 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 ## PCB Changelog
 
+### Version 3.1
+- Added white field to specify the Node ID
+
 ### Version 3.0
 - Removed Arduino Pro Mini Dauther PCB
 - Added ATMEGA328P direct to the PCB
