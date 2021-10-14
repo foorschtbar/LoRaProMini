@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "LoRaProMini"
-Date "2021-09-20"
-Rev "3.0"
+Date "2021-10-14"
+Rev "3.1"
 Comp "(c) 2021 foorschtbar"
 Comment1 "https://github.com/foorschtbar/LoRaProMini"
 Comment2 ""
