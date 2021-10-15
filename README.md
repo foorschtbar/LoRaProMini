@@ -83,10 +83,11 @@ Example:
 avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1.0_config.hex:i
 ```
 
-## BOM
-- TBD :warning:
-
 ## Firmware Changelog
+
+### Version 2.2
+- An additional send delay between 0 and 20s has been added to avoid overlaps between different nodes with exactly the same send interval
+- Some Flash memory optimizations
 
 ### Version 2.1
 - Improved (debug) logging to serial output

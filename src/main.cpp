@@ -46,6 +46,9 @@
 #define CFG_SIZE 82
 #define CFG_SIZE_WITH_CHECKSUM 86
 
+// LORA MAX RANDOM SEND DELAY
+#define LORA_MAX_RANDOM_SEND_DELAY 20
+
 // ++++++++++++++++++++++++++++++++++++++++
 //
 // LOGGING
@@ -573,7 +576,7 @@ void do_send(osjob_t *j)
 
     // Prepare upstream data transmission at the next possible time.
     LMIC_setTxData2(1, buffer, sizeof(buffer), cfg.CONFIRMED_DATA_UP);
-    log_d_ln(F("LoRa packet queued"));
+    log_d_ln(F("Packet queued"));
   }
 }
 
@@ -684,25 +687,29 @@ void do_sleep(uint16_t sleepTime)
   if (LOG_DEBUG_ENABLED)
   {
     Serial.print(F("Sleep "));
-    if (sleepTime <= 0)
+    if (sleepTimeLeft <= 0)
     {
       Serial.println(F("FOREVER\n"));
     }
     else
     {
-      Serial.print(sleepTime);
+      Serial.print(sleepTimeLeft);
       Serial.println(F("s\n"));
     }
     Serial.flush();
   }
 
   // sleep logic using LowPower library
-  if (sleepTime <= 0)
+  if (sleepTimeLeft <= 0)
   {
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
   }
   else
   {
+
+    // Add LORA_MAX_RANDOM_SEND_DELAY of randomness to avoid overlapping of different
+    // nodes with exactly the same sende interval
+    sleepTimeLeft += (rand() % LORA_MAX_RANDOM_SEND_DELAY);
 
     // sleep logic using LowPower library
     uint16_t delays[] = {8, 4, 2, 1};
@@ -746,31 +753,29 @@ void onEvent(ev_t ev)
   switch (ev)
   {
   case EV_JOINING:
-    log_d_ln(F("LoRa joining..."));
+    log_d_ln(F("Joining..."));
     break;
   case EV_JOINED:
-    log_d_ln(F("LoRa joined!"));
+    log_d_ln(F("Joined!"));
 
     if (cfg.ACTIVATION_METHOD == OTAA)
     {
-      {
-        u4_t netid = 0;
-        devaddr_t devaddr = 0;
-        u1_t nwkKey[16];
-        u1_t artKey[16];
-        LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
-        log_d(F("> NetID: "));
-        log_d_ln(netid, DEC);
-        log_d(F("> DevAddr (MSB): "));
-        log_d_ln(devaddr, HEX);
-        log_d(F("> AppSKey (MSB): "));
-        logHex_d(artKey, sizeof(artKey));
-        log_d_ln();
-        log_d(F("> NwkSKey (MSB): "));
-        logHex_d(nwkKey, sizeof(nwkKey));
-        log_d_ln();
-        log_d_ln();
-      }
+      //   u4_t netid = 0;
+      //   devaddr_t devaddr = 0;
+      //   u1_t nwkKey[16];
+      //   u1_t artKey[16];
+      //   LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
+      //   log_d(F("> NetID: "));
+      //   log_d_ln(netid, DEC);
+      //   log_d(F("> DevAddr: ")); // (MSB)
+      //   log_d_ln(devaddr, HEX);
+      //   log_d(F("> AppSKey: ")); // (MSB)
+      //   logHex_d(artKey, sizeof(artKey));
+      //   log_d_ln();
+      //   log_d(F("> NwkSKey: ")); // (MSB)
+      //   logHex_d(nwkKey, sizeof(nwkKey));
+      //   log_d_ln();
+      log_d_ln();
 
       // Disable link check validation (automatically enabled
       // during join, but not supported by TTN at this time).
@@ -781,11 +786,11 @@ void onEvent(ev_t ev)
     }
     break;
   case EV_JOIN_FAILED:
-    log_d_ln(F("LoRa join failed"));
+    log_d_ln(F("Join failed"));
     lmicStartup(); //Reset LMIC and retry
     break;
   case EV_REJOIN_FAILED:
-    log_d_ln(F("EV_REJOIN_FAILED"));
+    log_d_ln(F("Rejoin failed"));
     lmicStartup(); //Reset LMIC and retry
     break;
 
@@ -793,7 +798,7 @@ void onEvent(ev_t ev)
     // log_d_ln(F("EV_TXSTART"));
     break;
   case EV_TXCOMPLETE:
-    log_d(F("LoRa TX complete #")); // (includes waiting for RX windows)
+    log_d(F("TX complete #")); // (includes waiting for RX windows)
     log_d_ln(LMIC.seqnoUp);
     if (LMIC.txrxFlags & TXRX_ACK)
       log_d_ln(F("> Received ack"));
@@ -822,7 +827,7 @@ void onEvent(ev_t ev)
     break;
 
   case EV_JOIN_TXCOMPLETE:
-    log_d_ln(F("LoRa NO JoinAccept"));
+    log_d_ln(F("NO JoinAccept"));
     break;
   case EV_BEACON_FOUND:
   case EV_BEACON_MISSED:
@@ -837,7 +842,7 @@ void onEvent(ev_t ev)
   case EV_TXCANCELED:
   case EV_RXSTART:
   default:
-    log_d(F("Unknown event: "));
+    log_d(F("Unknown Evt: "));
     log_d_ln((unsigned)ev);
     break;
   }
@@ -847,7 +852,7 @@ void updatePins()
 {
   if (wakedFromISR0 || wakedFromISR1)
   {
-    log_d(F("Wakeup from interrupt pin "));
+    log_d(F("Waked from ItrPin "));
     if (wakedFromISR0)
     {
       log_d_ln(F("0!"));
@@ -992,7 +997,7 @@ void setup()
     // Reset the MAC state. Session and pending data transfers will be discarded.
     lmicStartup();
 
-    Serial.print(F("Join via "));
+    Serial.print(F("Join Mode: "));
 
     // ABP Mode
     if (cfg.ACTIVATION_METHOD == ABP)
@@ -1056,7 +1061,7 @@ void loop()
     }
     else if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
     {
-      log_d(F("Cannot sleep. txCnt="));
+      log_d(F("Can't sleep. txCnt="));
       log_d_ln(LMIC.txCnt);
       lastPrintTime = millis();
     }
