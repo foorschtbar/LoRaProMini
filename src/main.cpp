@@ -503,17 +503,17 @@ void do_send(osjob_t *j)
   }
   else
   {
-    // Unsigned 16 bits integer, 0 up to 65535
+    // Unsigned 16 bits integer, 0 up to 65,535
     uint16_t bat = 0;
 
     // Battery
     bat = readBat() * 100;
 
-    // Signed 16 bits integer, -32767 up to +32767
+    // Signed 16 bits integer, -32,768 up to +32,767
     int16_t temp1 = -127 * 100;
     int16_t temp2 = -127 * 100;
 
-    // Unsigned 16 bits integer, 0 up to 65535
+    // Unsigned 16 bits integer, 0 up to 65,535
     uint16_t humi1 = 0;
     uint16_t press1 = 0;
 
