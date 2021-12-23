@@ -155,15 +155,15 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 - Initial PCB
 
-## TTN Payload decoder
+## TTS Payload Formatter (formerly TTN Payload Decoder)
 
 ```javascript
 function decodeUplink(input) {
   var bytes = input.bytes;
 
-  var itrTrigger = (bytes[0] & 1) !== 0; // Message was triggerd from interrupt
-  var itr0 = (bytes[0] & 2) !== 0; // Interrupt 0
-  var itr1 = (bytes[0] & 4) !== 0; // Interrupt 1
+  var itrTrigger = (bytes[0] & 0x1) !== 0; // Message was triggerd from interrupt (bit 0)
+  var itr0 = (bytes[0] & 0x2) !== 0; // Interrupt 0 (bit 1)
+  var itr1 = (bytes[0] & 0x4) !== 0; // Interrupt 1 (bit 2)
   var bat = (bytes[1] << 8) | bytes[2]; // Battery
   var fwversion = (bytes[3] >> 4) + "." + (bytes[3] & 0xf); // Firmware version
   var temp1 = (bytes[4] & 0x80 ? 0xffff << 16 : 0) | (bytes[4] << 8) | bytes[5]; // BME Temperature
