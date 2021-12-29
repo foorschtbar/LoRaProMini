@@ -124,7 +124,7 @@ typedef struct
 {
   uint8_t CONFIG_IS_VALID;          // 1 byte
   uint16_t SLEEPTIME;               // 2 byte - (Deep) Sleep time between data acquisition and transmission
-  float BAT_SENSE_VBP;              // 4 byte - Volts per Bit. See documentation
+  float BAT_SENSE_VPB;              // 4 byte - Volts per Bit. See documentation
   float BAT_MIN_VOLTAGE;            // 4 byte - Minimum voltage for operation, otherwise the node continues to sleep
   uint8_t WAKEUP_BY_INTERRUPT_PINS; // 1 byte - 0 = Disabled, 1 = Enabled
   uint8_t CONFIRMED_DATA_UP;        // 1 byte - 0 = Unconfirmed Data Up, 1 = Confirmed Data Up
@@ -204,7 +204,7 @@ float readBat()
 
   value = value / numReadings;
 
-  float batteryV = value * cfg.BAT_SENSE_VBP;
+  float batteryV = value * cfg.BAT_SENSE_VPB;
   if (CONFIG_MODE_ENABLED)
   {
     Serial.print(F("Analoge voltage: "));
@@ -217,8 +217,8 @@ float readBat()
     Serial.print(batteryV, 1);
     Serial.print(F(" V ("));
     Serial.print(batteryV, 2);
-    Serial.print(F(" V, VBP="));
-    Serial.print(cfg.BAT_SENSE_VBP, 10);
+    Serial.print(F(" V, VPB="));
+    Serial.print(cfg.BAT_SENSE_VPB, 10);
     Serial.println(F(")"));
   }
 
@@ -333,8 +333,8 @@ void showConfig(bool raw = false)
   }
   Serial.print(F("> SLEEPTIME: "));
   Serial.println(cfg.SLEEPTIME, DEC);
-  Serial.print(F("> BAT_SENSE_VBP: "));
-  Serial.println(cfg.BAT_SENSE_VBP, DEC);
+  Serial.print(F("> BAT_SENSE_VPB: "));
+  Serial.println(cfg.BAT_SENSE_VPB, DEC);
   Serial.print(F("> BAT_MIN_VOLTAGE: "));
   Serial.println(cfg.BAT_MIN_VOLTAGE, DEC);
   Serial.print(F("> WAKEUP_BY_INTERRUPT_PINS: "));

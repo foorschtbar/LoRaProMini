@@ -21,24 +21,24 @@ $("form").on('click', 'button:not(:disabled)', function (e) {
         } catch (err) {}
     } else if ($(this).hasClass("calc")) {
         $("#calc").toggle();
-        calcVBP();
+        calcVPB();
 
     } else if ($(this).hasClass("add")) {
         let masterrow = $("#calc > div:first");
         masterrow.clone().appendTo("#calc").find("input[type='text']").val("");
-        calcVBP();
-        checkVBPInputs();
+        calcVPB();
+        checkVPBInputs();
 
     } else if ($(this).hasClass("remove")) {
         $(this).parent().remove();
-        calcVBP();
-        checkVBPInputs();
+        calcVPB();
+        checkVPBInputs();
     }
 
 });
 
 $("form").on('keyup change', '#calc input', function (e) {
-    calcVBP(e);
+    calcVPB(e);
 });
 
 $(":not(#calc) input, select").on('keyup change', function (e) {
@@ -51,20 +51,20 @@ $("#configStr").on('keyup blur change', function (e) {
 
 $(document).ready(function (e) {
     makeConfig(e);
-    checkVBPInputs();
+    checkVPBInputs();
 });
 
-function checkVBPInputs() {
+function checkVPBInputs() {
     $("#calc>div>button.add").prop("disabled", false).removeClass("btn-outline-secondary").addClass("btn-outline-success");
     $("#calc>div>button.remove").prop("disabled", false).removeClass("btn-outline-secondary").addClass("btn-outline-danger");
     $("#calc>div:not(:last-child)>button.add").prop("disabled", true).removeClass("btn-outline-success").addClass("btn-outline-secondary");
     $("#calc>div:only-child>button.remove").prop("disabled", true).removeClass("btn-outline-danger").addClass("btn-outline-secondary");
 }
 
-function calcVBP(event) {
+function calcVPB(event) {
 
     let fields = $("#calc input");
-    let vbp = 0;
+    let vpb = 0;
     let count = 0;
     for (i = 0; i < fields.length; i += 2) {
         let error = false;
@@ -100,17 +100,17 @@ function calcVBP(event) {
         // }
 
         if (!error) {
-            vbp += (voltage / analog);
+            vpb += (voltage / analog);
             count++;
         }
 
     }
 
     if (count > 0) {
-        vbp /= count;
+        vpb /= count;
     }
 
-    $("#BAT_SENSE_VBP").val(vbp).change();
+    $("#BAT_SENSE_VPB").val(VPB).change();
 
 }
 

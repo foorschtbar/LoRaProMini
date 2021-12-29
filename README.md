@@ -70,14 +70,16 @@ The module can be used:
 
 ## How to use
 
-1. Manufacture PCB. Here you find the [Gerber](pcb) files
-1. Assemble PCB. Here you find the [Bill of Materials](https://foorschtbar.github.io/LoRaProMini/pcb/bom/ibom.html) (BOM)
-   - **Attention:** The current version (v3.0) of the PCB has no ISP header! A pre-burned MEGA328P must be installed. I got one from an Arduino Pro Mini Board, because a completely assembled Arduino is cheaper than a single chip.
+1. Manufacture the PCB. Here you find the [Gerber](pcb) files
+1. Assemble the PCB. Here you find the [Bill of Materials](https://foorschtbar.github.io/LoRaProMini/pcb/bom/ibom.html) (BOM)
+   - **Attention:** The current version (v3.1) of the PCB has no ISP header! A pre-burned Atmega328P must be installed. I got one from an Arduino Pro Mini Board (3.3V 8 Mhz), because a completely assembled Arduino is cheaper than a single chip
 1. Flash config firmware (See [How to flash](#how-to-flash))
 1. Start voltage calibration from menu
-1. Set a voltage, measure the voltage with a multimeter and note the analog value. The range is optimized up to 6V
-1. Use volts-per-bit calculator to get VBP factor for config
-1. Create configuration with [Configuration Builder](https://foorschtbar.github.io/LoRaProMini/configbuilder)
+1. Start configuration builder [Configuration Builder](https://foorschtbar.github.io/LoRaProMini/configbuilder)
+1. Measure the voltage with a multimeter.
+1. Insert multimeter voltage and the analog value in the Volts-per-bit (VPB) calculator to get VPB factor.
+1. If u have a adjustable power supply, try different voltages to find best factor. Warning: The maximum voltage is 6 Volt
+1. Fill out the other fields like activation methode, session keys and EUIs
 1. Write configuration to EEPROM using configuration menu
 1. Check written configuration via configuration menu
 1. Flash debug or release firmware (See [How to flash](#how-to-flash))
@@ -97,10 +99,14 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 ## Firmware Changelog
 
+### Version 2.3
+
+- Fixed Typo
+
 ### Version 2.2
 
 - An additional send delay between 0 and 20s has been added to avoid overlaps between different nodes with exactly the same send interval
-- Some Flash memory optimizations
+- Some flash memory optimizations
 
 ### Version 2.1
 
@@ -210,6 +216,7 @@ function decodeUplink(input) {
 ## ToDo
 
 - [ ] Go to sleep immediately when voltage is too low
+- [ ] Multi point calibration for battery voltage
 - [x] Add wake up trough interrupt pins
 - [x] Move Major- and Minorversion byte to single byte. 4 bits for major and 4 bits for minor.
 - [x] Add option for Confirmed Uplink to config
