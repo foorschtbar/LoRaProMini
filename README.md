@@ -222,6 +222,8 @@ function decodeUplink(input) {
 
 - [ ] Go to sleep immediately when voltage is too low
 - [ ] Multi point calibration for battery voltage
+- [ ] Set ADR (On/Off)
+- [ ] Set SF (7-12)
 - [x] Add wake up trough interrupt pins
 - [x] Move Major- and Minorversion byte to single byte. 4 bits for major and 4 bits for minor.
 - [x] Add option for Confirmed Uplink to config
