@@ -1,6 +1,8 @@
 // Run at document ready
 $(document).ready((e) => {
-    makeConfig(e);
+    makeConfig({
+        event: e
+    });
     checkVPBInputs();
 });
 
@@ -43,9 +45,16 @@ $("form").on('click', 'button:not(:disabled)', (e) => {
     }
 
 });
-$("form").on('keyup change', '#calc input', (e) => calcVPB(e));
-$(":not(#calc) input, select").on('keyup change', (e) => makeConfig(e));
-$("#configStr").on('keyup blur change', (e) => makeConfig(e, true));
+$("form").on('keyup change', '#calc input', (e) => calcVPB({
+    event: e
+}));
+$(":not(#calc) input, select").on('keyup change', (e) => makeConfig({
+    event: e
+}));
+$("#configStr").on('keyup blur change', (e) => makeConfig({
+    event: e,
+    fromInput: true
+}));
 
 
 const checkVPBInputs = () => {
@@ -112,7 +121,10 @@ const getValidLen = (str) => {
     return validLen;
 }
 
-const makeConfig = (event, parseConfig = false, checkOnly = false) => {
+const makeConfig = ({
+    event,
+    fromInput = false
+}) => {
     let errorMake = false;
     let errorMsg = "";
     let cfgStr = "";
@@ -122,7 +134,7 @@ const makeConfig = (event, parseConfig = false, checkOnly = false) => {
     let configLen = getConfigLen();
     let configLenWithCRC = getConfigLen() + 8;
 
-    if (parseConfig) {
+    if (fromInput) {
         // Clean input
         configStr.val(configStr.val().replace(/[^a-fA-F0-9]/g, ""));
 
@@ -148,7 +160,7 @@ const makeConfig = (event, parseConfig = false, checkOnly = false) => {
                 let dataGroup = formFields[k][3];
 
                 if (field.length) {
-                    if (parseConfig) {
+                    if (fromInput) {
 
                         // Extract bytes from configStr
                         hexSubStr = configStr.val().substr(pos, datatypeSize * 2);
@@ -314,14 +326,16 @@ const makeConfig = (event, parseConfig = false, checkOnly = false) => {
         );
     }
 
-    if (parseConfig) {
+    if (fromInput) {
 
         if (errorMsg != "") {
             configStr.removeClass("is-valid").addClass("is-invalid");
             configStr.nextAll("div.invalid-feedback").html(errorMsg);
         } else {
             configStr.removeClass("is-invalid").addClass("is-valid");
-            makeConfig(event, false, true);
+            makeConfig({
+                event: event
+            });
         }
 
     } else {
