@@ -12,27 +12,27 @@
 ![](https://img.shields.io/github/license/foorschtbar/LoRaProMini?style=plastic)
 ](https://github.com/foorschtbar/LoRaProMini)
 
-A LoRaWAN sensor node for The Things Network, based on an ATMEGA328P (Arduino Pro Mini) and RFM95W/SX1276 LoRa transiver module.
+A LoRaWAN sensor node, based on ATmega328P MCU (Arduino Pro Mini) and RFM95W/SX1276 LoRa Transceiver.
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
 ![PCB Front Assembled](.github/pcb_real.jpg)
 
 The module can be used:
 
-- Collect various climate values with environmental sensors. See [Environmental (Weather/Clima) Sensor](#environmental-weatherclima-sensor).
-- Tell if the letter carrier has put new letters in your mailbox. See [Mailbox Monitor](#mailbox-monitor).
-- Notify if someone rang the doorbell. See [Doorbell Monitor](#doorbell-monitor).
+- Collect various climate values with environmental sensors. See [Environmental (Weather/Clima) Sensor](#environmental-weatherclima-sensor)
+- Tell if the letter carrier has put new letters in your mailbox. See [Mailbox Monitor](#mailbox-monitor)
+- Notify if someone rang the doorbell
 - Act a wirless button
 - and many more...
 
 ## Features
 
-- Deep sleep MCU and sensors between data transmissions.
-- Two interrupt inputs could use to wake up the MCU and sensors from deep sleep.
-- Confirmend und unconfirmend data up messages.
-- Ultra low power consumption. Under 10μA with all features and sensors.
+- Deep sleep MCU and sensors between data transmissions
+- Two interrupt inputs could use to wake up the MCU and sensors from deep sleep
+- Confirmend und unconfirmend data up messages
+- Ultra low power consumption. Under 10μA with all features and sensors
 - Power input 3.5-6V:
-  - Battery (Li-Ion with 3.7V works fine)
+  - Battery (Li-Ion or Li-SOCl2 works fine)
   - Battery with solar charger
 - Sensor support
   - Bosch BME280 (humidity, barometric pressure and ambient temperature)
@@ -42,17 +42,19 @@ The module can be used:
 
 ### Environmental (Weather/Clima) Sensor
 
+ - Download [Radiation Shield STL](https://www.prusaprinters.org/prints/73421-radiation-shield-for-diy-weather-station)
+ - Buy [Waterproof LED Solar Light](https://s.click.aliexpress.com/e/_9AKunB) 
+
 ![Outdoor Clima Sensor](.github/outdoor_environmental_sensor.jpg)
 
 ### Mailbox Monitor
 
+ - Download [Case STL](https://www.prusaprinters.org/prints/132941-case-for-lorawan-mailbox-monitor-lorapromini)
+- Buy [Normal Close Reed Switches](https://s.click.aliexpress.com/e/_A1mmAd)
+
 ![Mailbox Monitor](.github/outdoor_mailbox_monitor.jpg)
 
 ![Mailbox Monitor](.github/mailbox_full_small.gif) ![Mailbox Monitor](.github/mailbox_empty_small.gif)
-
-### Doorbell Monitor
-
-- TBD :warning:
 
 ## More pics
 
@@ -76,7 +78,7 @@ The module can be used:
 1. Flash config firmware (See [How to flash](#how-to-flash))
 1. Start voltage calibration from menu
 1. Start configuration builder [Configuration Builder](https://foorschtbar.github.io/LoRaProMini/configbuilder)
-1. Measure the voltage with a multimeter.
+1. Measure the voltage with a multimeter
 1. Insert multimeter voltage and the analog value in the Volts-per-bit (VPB) calculator to get VPB factor.
 1. If u have a adjustable power supply, try different voltages to find best factor. Warning: The maximum voltage is 6 Volt
 1. Fill out the other fields like activation methode, session keys and EUIs
