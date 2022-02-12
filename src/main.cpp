@@ -150,6 +150,7 @@ boolean TXCompleted = false;
 boolean foundBME = false; // BME Sensor found. To skip reading if no sensor is attached
 boolean foundDS = false;  // DS19x Sensor found. To skip reading if no sensor is attached
 byte pinState = 0x0;
+boolean doSend = false;
 
 // These callbacks are used in over-the-air activation
 void os_getArtEui(u1_t *buf)
@@ -574,6 +575,8 @@ void do_send(osjob_t *j)
     // Print first debug messages in loop immediately
     lastPrintTime = 0;
 
+    TXCompleted = false;
+
     // Prepare upstream data transmission at the next possible time.
     LMIC_setTxData2(1, buffer, sizeof(buffer), cfg.CONFIRMED_DATA_UP);
     log_d_ln(F("Packet queued"));
@@ -673,17 +676,6 @@ void do_sleep(uint16_t sleepTime)
   uint16_t sleepTimeLeft = sleepTime;
   boolean breaksleep = false;
 
-  // Allow wake up pin to trigger interrupt on low.
-  // https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
-  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
-  {
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0), wakeUp0, RISING);
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1), wakeUp1, RISING);
-  }
-
-  wakedFromISR0 = false;
-  wakedFromISR1 = false;
-
   if (LOG_DEBUG_ENABLED)
   {
     Serial.print(F("Sleep "));
@@ -739,13 +731,6 @@ void do_sleep(uint16_t sleepTime)
       }
     }
   }
-
-  // Disable external pin interrupt on wake up pin.
-  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
-  {
-    detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0));
-    detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1));
-  }
 }
 
 void onEvent(ev_t ev)
@@ -777,9 +762,10 @@ void onEvent(ev_t ev)
       //   log_d_ln();
       log_d_ln();
 
-      // Disable link check validation (automatically enabled
-      // during join, but not supported by TTN at this time).
-      LMIC_setLinkCheckMode(0);
+      // Enable ADR explicit (default is alreay enabled)
+      LMIC_setAdrMode(1);
+      // enable link check validation
+      LMIC_setLinkCheckMode(1);
 
       // Ok send our first data in 10 ms
       os_setTimedCallback(&sendjob, os_getTime() + ms2osticks(10), do_send);
@@ -829,6 +815,10 @@ void onEvent(ev_t ev)
   case EV_JOIN_TXCOMPLETE:
     log_d_ln(F("NO JoinAccept"));
     break;
+
+  case EV_TXCANCELED:
+    log_d_ln(F("TX canceled!"));
+    break;
   case EV_BEACON_FOUND:
   case EV_BEACON_MISSED:
   case EV_BEACON_TRACKED:
@@ -839,7 +829,7 @@ void onEvent(ev_t ev)
   case EV_LINK_DEAD:
   case EV_LINK_ALIVE:
   case EV_SCAN_FOUND:
-  case EV_TXCANCELED:
+
   case EV_RXSTART:
   default:
     log_d(F("Unknown Evt: "));
@@ -848,7 +838,7 @@ void onEvent(ev_t ev)
   }
 }
 
-void updatePins()
+void handleISR()
 {
   if (wakedFromISR0 || wakedFromISR1)
   {
@@ -870,6 +860,16 @@ void updatePins()
     // set STATE_ITR_EVT bit in pinState byte to 1
     // this means this pin was set now
     pinState |= STATE_ITR_TRIGGER;
+
+    // Remove data previously prepared for upstream transmission.
+    // If transmit messages are pending, the event EV_TXCOMPLETE will be reported.
+    if (!TXCompleted)
+    {
+      LMIC_clrTxData();
+    }
+
+    // send new data;
+    doSend = true;
 
     wakedFromISR0 = false;
     wakedFromISR1 = false;
@@ -988,6 +988,16 @@ void setup()
     log_d_ln(F("not found"));
   }
 
+  // Allow wake up pin to trigger interrupt on low.
+  // https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+  if (cfg.WAKEUP_BY_INTERRUPT_PINS == 1)
+  {
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN0), wakeUp0, RISING);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN1), wakeUp1, RISING);
+  }
+  wakedFromISR0 = false;
+  wakedFromISR1 = false;
+
   // Start LoRa stuff if not in config mode
   if (!CONFIG_MODE_ENABLED)
   {
@@ -1037,8 +1047,6 @@ void loop()
     // Previous TX is complete and also no critical jobs pending in LMIC
     if (TXCompleted)
     {
-      TXCompleted = false;
-
       // Going to sleep
       boolean sleep = true;
       while (sleep)
@@ -1054,10 +1062,10 @@ void loop()
         }
       }
 
-      updatePins();
+      handleISR();
 
       // sleep ended. do next transmission
-      do_send(&sendjob);
+      doSend = true;
     }
     else if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
     {
@@ -1066,6 +1074,12 @@ void loop()
       lastPrintTime = millis();
     }
 
-    updatePins();
+    handleISR();
+
+    if (doSend)
+    {
+      doSend = false;
+      do_send(&sendjob);
+    }
   }
 }
