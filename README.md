@@ -99,6 +99,11 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 ## Firmware Changelog
 
+### Version 2.4
+
+- An external interrupt during a transmission terminates the transmission and starts a new transmission.
+- Enabled Link Check Mode
+
 ### Version 2.3
 
 - Fixed Typo
