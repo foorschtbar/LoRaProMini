@@ -1,9 +1,18 @@
-$("form").on('click', 'button:not(:disabled)', function (e) {
-    e.preventDefault();
-    let field = $(this).prevAll("input, textarea");
-    let fieldname = $(this).prevAll("input, textarea").attr("id");
+// Run at document ready
+$(document).ready((e) => {
+    makeConfig({
+        event: e
+    });
+    checkVPBInputs();
+});
 
-    if ($(this).hasClass("generate")) {
+// Listen for events
+$("form").on('click', 'button:not(:disabled)', (e) => {
+    e.preventDefault();
+    let field = $(e.target).prevAll("input, textarea");
+    let fieldname = $(e.target).prevAll("input, textarea").attr("id");
+
+    if ($(e.target).hasClass("generate")) {
         genStr = "";
         if (formFields[fieldname] !== "undefined") {
             datatypeLen = formFields[fieldname][1];
@@ -13,55 +22,49 @@ $("form").on('click', 'button:not(:disabled)', function (e) {
             field.val(genStr).change();
 
         }
-    } else if ($(this).hasClass("copy")) {
+    } else if ($(e.target).hasClass("copy")) {
         field.focus();
         field.select();
         try {
             document.execCommand('copy');
         } catch (err) {}
-    } else if ($(this).hasClass("calc")) {
+    } else if ($(e.target).hasClass("calc")) {
         $("#calc").toggle();
         calcVPB();
 
-    } else if ($(this).hasClass("add")) {
+    } else if ($(e.target).hasClass("add")) {
         let masterrow = $("#calc > div:first");
         masterrow.clone().appendTo("#calc").find("input[type='text']").val("");
         calcVPB();
         checkVPBInputs();
 
-    } else if ($(this).hasClass("remove")) {
-        $(this).parent().remove();
+    } else if ($(e.target).hasClass("remove")) {
+        $(e.target).parent().remove();
         calcVPB();
         checkVPBInputs();
     }
 
 });
+$("form").on('keyup change', '#calc input', (e) => calcVPB({
+    event: e
+}));
+$(":not(#calc) input, select").on('keyup change', (e) => makeConfig({
+    event: e
+}));
+$("#configStr").on('keyup blur change', (e) => makeConfig({
+    event: e,
+    fromInput: true
+}));
 
-$("form").on('keyup change', '#calc input', function (e) {
-    calcVPB(e);
-});
 
-$(":not(#calc) input, select").on('keyup change', function (e) {
-    makeConfig(e);
-});
-
-$("#configStr").on('keyup blur change', function (e) {
-    makeConfig(e, true);
-});
-
-$(document).ready(function (e) {
-    makeConfig(e);
-    checkVPBInputs();
-});
-
-function checkVPBInputs() {
+const checkVPBInputs = () => {
     $("#calc>div>button.add").prop("disabled", false).removeClass("btn-outline-secondary").addClass("btn-outline-success");
     $("#calc>div>button.remove").prop("disabled", false).removeClass("btn-outline-secondary").addClass("btn-outline-danger");
     $("#calc>div:not(:last-child)>button.add").prop("disabled", true).removeClass("btn-outline-success").addClass("btn-outline-secondary");
     $("#calc>div:only-child>button.remove").prop("disabled", true).removeClass("btn-outline-danger").addClass("btn-outline-secondary");
 }
 
-function calcVPB(event) {
+const calcVPB = (event) => {
 
     let fields = $("#calc input");
     let vpb = 0;
@@ -74,55 +77,42 @@ function calcVPB(event) {
         let voltage = parseFloat(f1.val());
         let analog = parseFloat(f2.val());
 
-        // if (f1.val().trim().length != 0) {
         if (voltage == "" || isNaN(voltage) || f1.val().match(/,/g)) {
             error = true;
             f1.removeClass("is-valid").addClass("is-invalid");
         } else {
             f1.removeClass("is-invalid").addClass("is-valid");
         }
-        // } else {
-        //     error = true;
-        //     f1.removeClass("is-invalid").removeClass("is-valid");
-        // }
 
-
-        // if (f2.val().trim().length != 0) {
         if (analog == "" || isNaN(analog) || f2.val().match(/,/g)) {
             error = true;
             f2.removeClass("is-valid").addClass("is-invalid");
         } else {
             f2.removeClass("is-invalid").addClass("is-valid");
         }
-        // } else {
-        //     error = true;
-        //     f2.removeClass("is-invalid").removeClass("is-valid");
-        // }
 
         if (!error) {
             vpb += (voltage / analog);
             count++;
         }
-
     }
 
     if (count > 0) {
         vpb /= count;
     }
 
-    $("#BAT_SENSE_VPB").val(VPB).change();
-
+    $("#BAT_SENSE_VPB").val(vpb).change();
 }
 
-function getConfigLen() {
+const getConfigLen = () => {
     let len = 0;
-    Object.keys(formFields).forEach(function (k) {
+    Object.keys(formFields).forEach((k) => {
         len += parseInt(formFields[k][1]) * 2;
     });
     return len;
 }
 
-function getValidLen(str) {
+const getValidLen = (str) => {
     patt = /[^\s-]/g
     validLen = str.length;
     while (match = patt.exec(str)) {
@@ -131,7 +121,10 @@ function getValidLen(str) {
     return validLen;
 }
 
-function makeConfig(event, parseConfig = false, checkOnly = false) {
+const makeConfig = ({
+    event,
+    fromInput = false
+}) => {
     let errorMake = false;
     let errorMsg = "";
     let cfgStr = "";
@@ -141,7 +134,7 @@ function makeConfig(event, parseConfig = false, checkOnly = false) {
     let configLen = getConfigLen();
     let configLenWithCRC = getConfigLen() + 8;
 
-    if (parseConfig) {
+    if (fromInput) {
         // Clean input
         configStr.val(configStr.val().replace(/[^a-fA-F0-9]/g, ""));
 
@@ -153,7 +146,7 @@ function makeConfig(event, parseConfig = false, checkOnly = false) {
     }
 
     if (errorMsg == "") {
-        Object.keys(formFields).forEach(function (k) {
+        Object.keys(formFields).forEach((k) => {
                 let hexStr = "";
                 errorMsg = "";
 
@@ -167,7 +160,7 @@ function makeConfig(event, parseConfig = false, checkOnly = false) {
                 let dataGroup = formFields[k][3];
 
                 if (field.length) {
-                    if (parseConfig) {
+                    if (fromInput) {
 
                         // Extract bytes from configStr
                         hexSubStr = configStr.val().substr(pos, datatypeSize * 2);
@@ -333,14 +326,16 @@ function makeConfig(event, parseConfig = false, checkOnly = false) {
         );
     }
 
-    if (parseConfig) {
+    if (fromInput) {
 
         if (errorMsg != "") {
             configStr.removeClass("is-valid").addClass("is-invalid");
             configStr.nextAll("div.invalid-feedback").html(errorMsg);
         } else {
             configStr.removeClass("is-invalid").addClass("is-valid");
-            makeConfig(event, false, true);
+            makeConfig({
+                event: event
+            });
         }
 
     } else {
@@ -409,7 +404,7 @@ const HexToFloat32 = (str) => {
     } else return 0
 }
 
-function flipHexString(hexStr, hexDigits) {
+const flipHexString = (hexStr, hexDigits) => {
     h = "";
 
     for (let i = 0; i < hexDigits; ++i) {
@@ -419,7 +414,7 @@ function flipHexString(hexStr, hexDigits) {
     return h;
 }
 
-function formatHexStr(hexStr, length) {
+const formatHexStr = (hexStr, length) => {
     let strRtn = "";
     for (i = 0; i < length; i++) {
         if (i < hexStr.length) {
@@ -434,7 +429,7 @@ function formatHexStr(hexStr, length) {
     return strRtn;
 }
 
-function padHexStr(hexStr, length) {
+const padHexStr = (hexStr, length) => {
 
     while (hexStr.length < length) {
         hexStr = "0" + hexStr;
@@ -443,7 +438,7 @@ function padHexStr(hexStr, length) {
     return hexStr;
 }
 
-var makeCRCTable = function () {
+const makeCRCTable = () => {
     var c;
     var crcTable = [];
 
@@ -460,7 +455,7 @@ var makeCRCTable = function () {
     return crcTable;
 }
 
-var crc32 = function (str) {
+const crc32 = (str) => {
     var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
     var crc = 0 ^ (-1);
 
@@ -470,5 +465,3 @@ var crc32 = function (str) {
 
     return (crc ^ (-1)) >>> 0;
 }
-
-;
