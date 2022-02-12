@@ -42,9 +42,9 @@
                     <div class="invalid-feedback"></div>
                 </div>
                 <div class="form-floating input-group has-validation mb-3">
-                    <input type="text" class="form-control" id="BAT_SENSE_VBP">
-                    <label for="BAT_SENSE_VBP">Adjustment for voltage divider (Volts per bit, 4 bytes)</label>
-                    <button class="btn btn-outline-primary calc" type="button" title="VBP Calculator">
+                    <input type="text" class="form-control" id="BAT_SENSE_VPB">
+                    <label for="BAT_SENSE_VPB">Adjustment for voltage divider (Volts per bit, 4 bytes)</label>
+                    <button class="btn btn-outline-primary calc" type="button" title="VPB Calculator">
                         <i class="bi bi-calculator"></i>
                     </button>
                     <div class="invalid-feedback"></div>
@@ -213,7 +213,7 @@
         // NAME DATATYPE DATALEN FLIPP GROUP   
         "CONFIG_IS_VALID": ["int", "1", true, 0],
         "SLEEPTIME": ["int", "2", true, 0],
-        "BAT_SENSE_VBP": ["float", "4", true, 0],
+        "BAT_SENSE_VPB": ["float", "4", true, 0],
         "BAT_MIN_VOLTAGE": ["float", "4", true, 0],
         "WAKEUP_BY_INTERRUPT_PINS": ["int", "1", true, 0],
         "CONFIRMED_DATA_UP": ["int", "1", true, 0],
