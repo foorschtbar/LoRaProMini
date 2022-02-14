@@ -673,26 +673,25 @@ void lmicStartup()
 void do_sleep(uint16_t sleepTime)
 {
 
-  uint16_t sleepTimeLeft = sleepTime;
   boolean breaksleep = false;
 
   if (LOG_DEBUG_ENABLED)
   {
     Serial.print(F("Sleep "));
-    if (sleepTimeLeft <= 0)
+    if (sleepTime <= 0)
     {
       Serial.println(F("FOREVER\n"));
     }
     else
     {
-      Serial.print(sleepTimeLeft);
+      Serial.print(sleepTime);
       Serial.println(F("s\n"));
     }
     Serial.flush();
   }
 
   // sleep logic using LowPower library
-  if (sleepTimeLeft <= 0)
+  if (sleepTime <= 0)
   {
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
   }
@@ -701,7 +700,11 @@ void do_sleep(uint16_t sleepTime)
 
     // Add LORA_MAX_RANDOM_SEND_DELAY of randomness to avoid overlapping of different
     // nodes with exactly the same sende interval
-    sleepTimeLeft += (rand() % LORA_MAX_RANDOM_SEND_DELAY);
+    sleepTime += (rand() % LORA_MAX_RANDOM_SEND_DELAY);
+
+    // Measurements show that the timer is off by about 12 percent,
+    // so the sleep time is shortened by this value.
+    sleepTime *= 0.88;
 
     // sleep logic using LowPower library
     uint16_t delays[] = {8, 4, 2, 1};
@@ -710,12 +713,12 @@ void do_sleep(uint16_t sleepTime)
 
     for (uint8_t i = 0; (i <= 3 && !breaksleep); i++)
     {
-      for (uint16_t x = sleepTimeLeft; (x >= delays[i] && !breaksleep); x -= delays[i])
+      for (uint16_t x = sleepTime; (x >= delays[i] && !breaksleep); x -= delays[i])
       {
         // Serial.print("i: ");
         // Serial.print(i);
         // Serial.print(" TL: ");
-        // Serial.print(sleepTimeLeft);
+        // Serial.print(sleepTime);
         // Serial.print(" S: ");
         // Serial.println(delays[i]);
         // Serial.flush();
@@ -726,7 +729,7 @@ void do_sleep(uint16_t sleepTime)
         }
         else
         {
-          sleepTimeLeft -= delays[i];
+          sleepTime -= delays[i];
         }
       }
     }
@@ -773,11 +776,11 @@ void onEvent(ev_t ev)
     break;
   case EV_JOIN_FAILED:
     log_d_ln(F("Join failed"));
-    lmicStartup(); //Reset LMIC and retry
+    lmicStartup(); // Reset LMIC and retry
     break;
   case EV_REJOIN_FAILED:
     log_d_ln(F("Rejoin failed"));
-    lmicStartup(); //Reset LMIC and retry
+    lmicStartup(); // Reset LMIC and retry
     break;
 
   case EV_TXSTART:
