@@ -145,7 +145,7 @@ configData_t cfg; // Instance 'cfg' is a global variable with 'configData_t' str
 volatile boolean wakedFromISR0 = false;
 volatile boolean wakedFromISR1 = false;
 unsigned long lastPrintTime = 0;
-unsigned long prepareCount = 0;
+// unsigned long prepareCount = 0;
 boolean TXCompleted = false;
 boolean foundBME = false; // BME Sensor found. To skip reading if no sensor is attached
 boolean foundDS = false;  // DS19x Sensor found. To skip reading if no sensor is attached
@@ -550,8 +550,8 @@ void do_send(osjob_t *j)
     buffer[10] = temp2 >> 8;
     buffer[11] = temp2;
 
-    log_d("Prepare package #");
-    log_d_ln(++prepareCount);
+    log_d_ln("Prepare pck");
+    // log_d_ln(++prepareCount);
     // log_d(F("> FW: v"));
     // log_d(VERSION_MAJOR);
     // log_d(F("."));
@@ -579,7 +579,7 @@ void do_send(osjob_t *j)
 
     // Prepare upstream data transmission at the next possible time.
     LMIC_setTxData2(1, buffer, sizeof(buffer), cfg.CONFIRMED_DATA_UP);
-    log_d_ln(F("Packet queued"));
+    log_d_ln(F("Pck queued"));
   }
 }
 
@@ -654,6 +654,8 @@ void lmicStartup()
 
     // Disable link check validation
     LMIC_setLinkCheckMode(0);
+    // Disable ADR
+    LMIC_setAdrMode(0);
 
     // TTN uses SF9 for its RX2 window.
     LMIC.dn2Dr = DR_SF9;
@@ -670,6 +672,7 @@ void lmicStartup()
   // #endif
 }
 
+extern volatile unsigned long timer0_overflow_count;
 void do_sleep(uint16_t sleepTime)
 {
 
@@ -734,6 +737,13 @@ void do_sleep(uint16_t sleepTime)
       }
     }
   }
+
+  // LMIC does not get that the MCU is sleeping and the
+  // duty cycle limitation then provides a delay. A manual
+  // overflow of timer0_overflow_count (wiring.c from the arduino core)
+  // which is used for micros() fix that.
+  // https://www.thethingsnetwork.org/forum/t/adafruit-feather-32u4-lora-long-transmission-time-after-deep-sleep/11678/11
+  timer0_overflow_count += 3E6;
 }
 
 void onEvent(ev_t ev)
@@ -787,12 +797,12 @@ void onEvent(ev_t ev)
     // log_d_ln(F("EV_TXSTART"));
     break;
   case EV_TXCOMPLETE:
-    log_d(F("TX complete #")); // (includes waiting for RX windows)
+    log_d(F("TX done #")); // (includes waiting for RX windows)
     log_d_ln(LMIC.seqnoUp);
     if (LMIC.txrxFlags & TXRX_ACK)
-      log_d_ln(F("> Received ack"));
+      log_d_ln(F("> Got ack"));
     if (LMIC.txrxFlags & TXRX_NACK)
-      log_d_ln(F("> Received NO ack"));
+      log_d_ln(F("> Got NO ack"));
 
     // if (LMIC.dataLen)
     // {
@@ -900,11 +910,11 @@ void setup()
     delay(100); // per sample code on RF_95 test
   }
 
-  log_d(F("\n=== Starting LoRaProMini v"));
+  log_d(F("\n= Starting LoRaProMini v"));
   log_d(VERSION_MAJOR);
   log_d(F("."));
   log_d(VERSION_MINOR);
-  log_d_ln(F(" ==="));
+  log_d_ln(F(" ="));
 
   readConfig();
 
@@ -924,13 +934,13 @@ void setup()
     }
   }
 
-  log_d(F("Search DS18x..."));
+  log_d(F("Srch DS18x..."));
 
   ds.begin();
   ds.requestTemperatures();
 
   log_d(ds.getDeviceCount(), DEC);
-  log_d_ln(F(" found"));
+  log_d_ln(F(" fnd"));
 
   for (uint8_t i = 0; i < ds.getDeviceCount(); i++)
   {
@@ -967,11 +977,11 @@ void setup()
   }
 
   // BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
-  log_d(F("Search BME280..."));
+  log_d(F("Srch BME..."));
   if (bme.begin(I2C_ADR_BME))
   {
     foundBME = true;
-    log_d_ln(F("1 found"));
+    log_d_ln(F("1 fnd"));
     if (CONFIG_MODE_ENABLED)
     {
       bme.takeForcedMeasurement();
@@ -988,7 +998,7 @@ void setup()
   }
   else
   {
-    log_d_ln(F("not found"));
+    log_d_ln(F("0 fnd"));
   }
 
   // Allow wake up pin to trigger interrupt on low.
@@ -1010,7 +1020,7 @@ void setup()
     // Reset the MAC state. Session and pending data transfers will be discarded.
     lmicStartup();
 
-    Serial.print(F("Join Mode: "));
+    Serial.print(F("Join mode "));
 
     // ABP Mode
     if (cfg.ACTIVATION_METHOD == ABP)
@@ -1027,10 +1037,6 @@ void setup()
       // Start job (sending automatically starts OTAA too)
       // Join the network, sending will be started after the event "Joined"
       LMIC_startJoining();
-    }
-    else
-    {
-      Serial.println(F("?"));
     }
   }
 }
@@ -1061,7 +1067,7 @@ void loop()
         }
         else
         {
-          log_d_ln(F("Batt V to low!"));
+          log_d_ln(F("Bat to low!"));
         }
       }
 
@@ -1070,10 +1076,9 @@ void loop()
       // sleep ended. do next transmission
       doSend = true;
     }
-    else if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
+    if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
     {
-      log_d(F("Can't sleep. txCnt="));
-      log_d_ln(LMIC.txCnt);
+      log_d_ln(F("> Cant sleep"));
       lastPrintTime = millis();
     }
 
