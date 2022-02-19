@@ -672,10 +672,8 @@ void lmicStartup()
   // #endif
 }
 
-extern volatile unsigned long timer0_overflow_count;
 void do_sleep(uint16_t sleepTime)
 {
-
   boolean breaksleep = false;
 
   if (LOG_DEBUG_ENABLED)
@@ -739,11 +737,67 @@ void do_sleep(uint16_t sleepTime)
   }
 
   // LMIC does not get that the MCU is sleeping and the
-  // duty cycle limitation then provides a delay. A manual
-  // overflow of timer0_overflow_count (wiring.c from the arduino core)
-  // which is used for micros() fix that.
+  // duty cycle limitation then provides a delay.
+  // Reset duty cycle limitation to fix that.
+  LMIC.bands[BAND_MILLI].avail =
+      LMIC.bands[BAND_CENTI].avail =
+          LMIC.bands[BAND_DECI].avail = os_getTime();
+
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++ //
+  // If that still not work, here a some other things to checkout:
+  //
   // https://www.thethingsnetwork.org/forum/t/adafruit-feather-32u4-lora-long-transmission-time-after-deep-sleep/11678/11
-  timer0_overflow_count += 3E6;
+  // extern volatile unsigned long timer0_overflow_count;
+  // cli();
+  // timer0_overflow_count += 8 * 64 * clockCyclesPerMicrosecond();
+  // sei();
+  //
+  // https://www.thethingsnetwork.org/forum/t/lmic-sleeping-and-duty-cycle/15471/2
+  // https://github.com/matthijskooijman/arduino-lmic/issues/109
+  // https://github.com/matthijskooijman/arduino-lmic/issues/121
+  //
+  // https://www.thethingsnetwork.org/forum/t/modified-lmic-sleep-and-other-parameter/17027/3
+  //
+  // https://github.com/mcci-catena/arduino-lmic/issues/777
+  // LMIC.txend = 0;
+  // for (int i = 0; i < MAX_BANDS; i++)
+  // {
+  //   LMIC.bands[i].avail = 0;
+  // }
+  // LMIC.bands[BAND_MILLI].avail = 0;
+  // LMIC.bands[BAND_CENTI].avail = 0;
+  // LMIC.bands[BAND_DECI].avail = 0;
+  //
+  // https://github.com/matthijskooijman/arduino-lmic/issues/293
+  //
+  // os_radio(OP_TXDATA);
+  // LMIC.opmode = OP_TXDATA;
+  // LMIC_setTxData2(1, mydata, sizeof(mydata) - 1, 0);
+  //
+  // https://www.thethingsnetwork.org/forum/t/feather-m0-with-lmic-takes-more-than-2-minutes-to-transmit/41803/20?page=2
+  // https://gist.github.com/HeadBoffin/95eac7764d94ccde83af2503c1e24eb8
+  //
+  /// We don't just send here, give the os_runloop_once() a chance to run
+  // and we keep the State machine pure
+  //
+  // https://forum.arduino.cc/t/manipulation-of-millis-value/42855/4
+  //
+  // https://www.thethingsnetwork.org/forum/t/arduino-sx1276-with-lmic-library-on-arduino-ide-sleep-mode-problem/54692
+  // void PowerDownUpdateMicros()
+  // {
+  //   extern volatile unsigned long timer0_overflow_count;
+  //   PowerDown();
+  //   cli();
+  //   // LMIC uses micros() to keep track of the duty cycle, so
+  //   // hack timer0_overflow for a rude adjustment:
+  //   timer0_overflow_count += 8 * 64 * clockCyclesPerMicrosecond();
+  //   sei();
+  // }
+  // LMIC uses micros() to keep track of the duty cycle, so
+  // hack timer0_overflow for a rude adjustment:
+  // cli();
+  // timer0_overflow_count += 8 * 64 * clockCyclesPerMicrosecond();
+  // sei();
 }
 
 void onEvent(ev_t ev)
@@ -1076,7 +1130,7 @@ void loop()
       // sleep ended. do next transmission
       doSend = true;
     }
-    if (lastPrintTime == 0 || lastPrintTime + 5000 < millis())
+    if (lastPrintTime == 0 || lastPrintTime + 1000 < millis())
     {
       log_d_ln(F("> Cant sleep"));
       lastPrintTime = millis();

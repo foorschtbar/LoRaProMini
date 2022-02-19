@@ -101,6 +101,10 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 ## Firmware Changelog
 
+### Version 2.6
+
+- Second attempt to solve the unnecessary delay due to the duty cycle limitation. Overflow of timer0 freezes the MCU after around 20 transmissions.
+
 ### Version 2.5
 
 - Fixed problem with duty cycle limitation
