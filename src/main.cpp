@@ -145,7 +145,7 @@ configData_t cfg; // Instance 'cfg' is a global variable with 'configData_t' str
 volatile boolean wakedFromISR0 = false;
 volatile boolean wakedFromISR1 = false;
 unsigned long lastPrintTime = 0;
-// unsigned long prepareCount = 0;
+unsigned long prepareCount = 0;
 boolean TXCompleted = false;
 boolean foundBME = false; // BME Sensor found. To skip reading if no sensor is attached
 boolean foundDS = false;  // DS19x Sensor found. To skip reading if no sensor is attached
@@ -550,8 +550,8 @@ void do_send(osjob_t *j)
     buffer[10] = temp2 >> 8;
     buffer[11] = temp2;
 
-    log_d_ln("Prepare pck");
-    // log_d_ln(++prepareCount);
+    log_d("Prepare pck #");
+    log_d_ln(++prepareCount);
     // log_d(F("> FW: v"));
     // log_d(VERSION_MAJOR);
     // log_d(F("."));
@@ -988,13 +988,13 @@ void setup()
     }
   }
 
-  log_d(F("Srch DS18x..."));
+  log_d(F("Search DS18x..."));
 
   ds.begin();
   ds.requestTemperatures();
 
   log_d(ds.getDeviceCount(), DEC);
-  log_d_ln(F(" fnd"));
+  log_d_ln(F(" found"));
 
   for (uint8_t i = 0; i < ds.getDeviceCount(); i++)
   {
@@ -1031,11 +1031,11 @@ void setup()
   }
 
   // BME280 forced mode, 1x temperature / 1x humidity / 1x pressure oversampling, filter off
-  log_d(F("Srch BME..."));
+  log_d(F("Search BME..."));
   if (bme.begin(I2C_ADR_BME))
   {
     foundBME = true;
-    log_d_ln(F("1 fnd"));
+    log_d_ln(F("1 found"));
     if (CONFIG_MODE_ENABLED)
     {
       bme.takeForcedMeasurement();
@@ -1052,7 +1052,7 @@ void setup()
   }
   else
   {
-    log_d_ln(F("0 fnd"));
+    log_d_ln(F("0 found"));
   }
 
   // Allow wake up pin to trigger interrupt on low.
@@ -1132,7 +1132,7 @@ void loop()
     }
     if (lastPrintTime == 0 || lastPrintTime + 1000 < millis())
     {
-      log_d_ln(F("> Cant sleep"));
+      log_d_ln(F("> Can't sleep"));
       lastPrintTime = millis();
     }
 
