@@ -15,7 +15,7 @@
 A LoRaWAN sensor node, based on ATmega328P MCU (Arduino Pro Mini) and RFM95W/SX1276 LoRa Transceiver.
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
-![PCB Front Assembled](.github/pcb_real.jpg)
+
 
 The module can be used:
 
@@ -38,6 +38,10 @@ The module can be used:
   - Bosch BME280 (humidity, barometric pressure and ambient temperature)
   - Maxim DS18B20(+)/DS18S20(+)/DS1822 1-Wire temperature sensor
 
+### Warning
+
+LoRaProMini does not take care of the compliance with the duty cycle limitation. Please select only transmission intervals that are within the legal limits (1%/0.1%). Please also note that the interrupt inputs may cause additional transmissions if this function is activated.
+
 ## Example Applications
 
 ### Environmental (Weather/Clima) Sensor
@@ -58,11 +62,9 @@ The module can be used:
 
 ## More pics
 
-<!--- ![PCB Front](.github/pcb_front.png) --->
+![PCB Real Assembled](.github/pcb_real.jpg)
 
-![PCB Back](.github/pcb_back.png)
-
-<!--- ![PCB Back](.github/pcb_back.png) --->
+![PCB Front and Back](.github/lorapromini_pcb.png)
 
 ![PCB KiCad](.github/pcb_kicad.png)
 
@@ -234,6 +236,7 @@ function decodeUplink(input) {
 - [ ] Multi point calibration for battery voltage
 - [ ] Set ADR (On/Off)
 - [ ] Set SF (7-12)
+- [ ] Allow change of NetID
 - [x] Add wake up trough interrupt pins
 - [x] Move Major- and Minorversion byte to single byte. 4 bits for major and 4 bits for minor.
 - [x] Add option for Confirmed Uplink to config
