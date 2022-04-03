@@ -54,7 +54,7 @@ LoRaProMini does not take care of the compliance with the duty cycle limitation.
 ### Mailbox Monitor
 
  - Download [Case STL](https://www.prusaprinters.org/prints/132941-case-for-lorawan-mailbox-monitor-lorapromini)
-- Buy [Normal Close Reed Switches](https://s.click.aliexpress.com/e/_A1mmAd)
+- Buy [Normally Opened Reed Switches](https://s.click.aliexpress.com/e/_AU1hN3)
 
 ![Mailbox Monitor](.github/outdoor_mailbox_monitor.jpg)
 
