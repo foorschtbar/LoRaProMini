@@ -195,7 +195,7 @@ function decodeUplink(input) {
   var temp2 =
     (bytes[10] & 0x80 ? 0xffff << 16 : 0) | (bytes[10] << 8) | bytes[11]; // DS18x Temperature
 
-  var mbStatus = "UNKOWN";
+  var mbStatus = "UNKNOWN";
   if (itr0) {
     mbStatus = "FULL";
   } else if (itr1) {
