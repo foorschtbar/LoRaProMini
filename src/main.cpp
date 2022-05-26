@@ -943,7 +943,7 @@ void handleISR()
   }
 }
 
-void reset_states()
+void reset_itr_trigger_state()
 {
   // set STATE_ITR_EVT bit in pinState byte to 0
   // this means that the pin states was set previously
@@ -1143,7 +1143,7 @@ void loop()
     {
       doSend = false;
       do_send(&sendjob);
-      reset_states();
+      reset_itr_trigger_state();
     }
   }
 }
