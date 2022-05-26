@@ -941,12 +941,13 @@ void handleISR()
     wakedFromISR0 = false;
     wakedFromISR1 = false;
   }
-  else
-  {
-    // set STATE_ITR_EVT bit in pinState byte to 0
-    // this means that the pin states was set previously
-    pinState &= ~(STATE_ITR_TRIGGER);
-  }
+}
+
+void reset_itr_trigger_state()
+{
+  // set STATE_ITR_EVT bit in pinState byte to 0
+  // this means that the pin states was set previously
+  pinState &= ~(STATE_ITR_TRIGGER);
 }
 
 void setup()
@@ -1142,6 +1143,7 @@ void loop()
     {
       doSend = false;
       do_send(&sendjob);
+      reset_itr_trigger_state();
     }
   }
 }
