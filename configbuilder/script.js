@@ -9,10 +9,10 @@ $(document).ready((e) => {
 // Listen for events
 $("form").on('click', 'button:not(:disabled)', (e) => {
     e.preventDefault();
-    let field = $(e.target).prevAll("input, textarea");
-    let fieldname = $(e.target).prevAll("input, textarea").attr("id");
+    let field = $(e.currentTarget).prevAll("input, textarea");
+    let fieldname = $(e.currentTarget).prevAll("input, textarea").attr("id");
 
-    if ($(e.target).hasClass("generate")) {
+    if ($(e.currentTarget).hasClass("generate")) {
         genStr = "";
         if (formFields[fieldname] !== "undefined") {
             datatypeLen = formFields[fieldname][1];
@@ -22,24 +22,24 @@ $("form").on('click', 'button:not(:disabled)', (e) => {
             field.val(genStr).change();
 
         }
-    } else if ($(e.target).hasClass("copy")) {
+    } else if ($(e.currentTarget).hasClass("copy")) {
         field.focus();
         field.select();
         try {
             document.execCommand('copy');
         } catch (err) {}
-    } else if ($(e.target).hasClass("calc")) {
+    } else if ($(e.currentTarget).hasClass("calc")) {
         $("#calc").toggle();
         calcVPB();
 
-    } else if ($(e.target).hasClass("add")) {
+    } else if ($(e.currentTarget).hasClass("add")) {
         let masterrow = $("#calc > div:first");
         masterrow.clone().appendTo("#calc").find("input[type='text']").val("");
         calcVPB();
         checkVPBInputs();
 
-    } else if ($(e.target).hasClass("remove")) {
-        $(e.target).parent().remove();
+    } else if ($(e.currentTarget).hasClass("remove")) {
+        $(e.currentTarget).parent().remove();
         calcVPB();
         checkVPBInputs();
     }
