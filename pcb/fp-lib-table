@@ -1,0 +1,7 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "HOPERF_RFM9XW_SMD")(type "KiCad")(uri "${KIPRJMOD}/Libraries/HOPERF_RFM9XW_SMD.pretty")(options "")(descr ""))
+  (lib (name "Antenna_SMA_uFL")(type "KiCad")(uri "${KIPRJMOD}/Libraries/Antenna_SMA_uFL.pretty")(options "")(descr ""))
+  (lib (name "Holes_1x05_P2.54mm")(type "KiCad")(uri "${KIPRJMOD}/Libraries/Holes_1x05_P2.54mm.pretty")(options "")(descr ""))
+  (lib (name "Holes_1x08_P2.54mm")(type "KiCad")(uri "${KIPRJMOD}/Libraries/Holes_1x08_P2.54mm.pretty")(options "")(descr ""))
+)
