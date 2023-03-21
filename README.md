@@ -1,7 +1,7 @@
 # LoRaProMini - A low power LoRaWAN Node
 
 [
-![](https://img.shields.io/github/workflow/status/foorschtbar/LoRaProMini/Build%20and%20Release?style=plastic)
+![](https://img.shields.io/github/actions/workflow/status/foorschtbar/LoRaProMini/build-and-release.yml?style=plastic)
 ![](https://img.shields.io/github/languages/top/foorschtbar/LoRaProMini?style=plastic)
 ![](https://img.shields.io/github/last-commit/foorschtbar/LoRaProMini?style=plastic)
 ![](https://img.shields.io/github/commit-activity/y/foorschtbar/LoRaProMini?style=plastic)
@@ -15,7 +15,6 @@
 A LoRaWAN sensor node, based on ATmega328P MCU (Arduino Pro Mini) and RFM95W/SX1276 LoRa Transceiver.
 
 ![PCB Front Assembled](.github/pcb_front_assembled.png)
-
 
 The module can be used:
 
@@ -46,14 +45,14 @@ LoRaProMini does not take care of the compliance with the duty cycle limitation.
 
 ### Environmental (Weather/Clima) Sensor
 
- - Download [Radiation Shield STL](https://www.prusaprinters.org/prints/73421-radiation-shield-for-diy-weather-station)
- - Buy [Waterproof LED Solar Light](https://s.click.aliexpress.com/e/_9AKunB) 
+- Download [Radiation Shield STL](https://www.prusaprinters.org/prints/73421-radiation-shield-for-diy-weather-station)
+- Buy [Waterproof LED Solar Light](https://s.click.aliexpress.com/e/_9AKunB)
 
 ![Outdoor Clima Sensor](.github/outdoor_environmental_sensor.jpg)
 
 ### Mailbox Monitor
 
- - Download [Case STL](https://www.prusaprinters.org/prints/132941-case-for-lorawan-mailbox-monitor-lorapromini)
+- Download [Case STL](https://www.prusaprinters.org/prints/132941-case-for-lorawan-mailbox-monitor-lorapromini)
 - Buy [Normally Opened Reed Switches](https://s.click.aliexpress.com/e/_AU1hN3)
 
 ![Mailbox Monitor](.github/outdoor_mailbox_monitor.jpg)
@@ -115,6 +114,7 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 
 - Fixed problem with duty cycle limitation
 - Fixed MCU deepsleep inaccuracy
+
 ### Version 2.4
 
 - An external interrupt during a transmission terminates the transmission and starts a new transmission.
@@ -152,6 +152,10 @@ avrdude -F -v -c arduino -p atmega328p -P COM4 -b 57600 -D -U flash:w:firmware_1
 - Initial Version
 
 ## PCB Changelog
+
+### Version 3.2
+
+- Fixed C7 (Replaced 10uF with 100nF)
 
 ### Version 3.1
 
