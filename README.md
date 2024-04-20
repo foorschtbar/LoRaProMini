@@ -14,7 +14,7 @@
 
 A LoRaWAN sensor node, based on ATmega328P MCU (Arduino Pro Mini) and RFM95W/SX1276 LoRa Transceiver.
 
-![PCB Front Assembled](.github/pcb_front_assembled.png)
+![PCB Front Assembled](.github/realworld.jpg)
 
 The module can be used:
 
@@ -43,7 +43,7 @@ LoRaProMini does not take care of the compliance with the duty cycle limitation.
 
 ### PCB Ordering
 
-:point_up: I still have a few PCBs left. If you are interested please contact me. Contact details can be found here: https://github.com/foorschtbar or visit my Tindie store: 
+:point_up: I still have a few PCBs left. If you are interested please contact me. Contact details can be found here: https://github.com/foorschtbar or visit my Tindie store:
 
 <a href="https://www.tindie.com/stores/foorschtbar/?ref=offsite_badges&utm_source=sellers_foorschtbar&utm_medium=badges&utm_campaign=badge_medium"><img src="https://d2ss6ovg47m0r5.cloudfront.net/badges/tindie-mediums.png" alt="I sell on Tindie" width="150" height="78"></a>
 
@@ -66,8 +66,6 @@ LoRaProMini does not take care of the compliance with the duty cycle limitation.
 ![Mailbox Monitor](.github/mailbox_full_small.gif) ![Mailbox Monitor](.github/mailbox_empty_small.gif)
 
 ## More pics
-
-![PCB Real Assembled](.github/pcb_real.jpg)
 
 ![PCB Front and Back](.github/lorapromini_pcb.png)
 
